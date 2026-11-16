@@ -842,9 +842,6 @@
       </div>
       <div style="font-size:12px; color:var(--text-sub); margin-bottom:12px;" id="payslipSub">정산 기간 안내</div>
       <div class="payslip-box" id="payslipBody"></div>
-      <div style="font-size:11px; color:var(--text-muted); margin-bottom:14px; line-height:1.45;">
-        * 4대보험·소득세 예상 공제(약 9.4%)는 참고용 추정치이며, 실제 급여는 회사 급여명세서 기준입니다.
-      </div>
       <button class="btn-save" onclick="closePayslip()">확인</button>
     </div>
   </div>
@@ -864,7 +861,7 @@
 
       <div class="input-group">
         <label class="input-label">월 목표 공수 (게이지 기준)</label>
-        <input type="number" class="input-field" id="targetGongsuInput" value="25" step="0.5" min="1">
+        <input type="number" class="input-field" id="targetGongsuInput" value="22" step="0.5" min="1">
       </div>
 
       <div class="input-group">
@@ -901,7 +898,7 @@
     let currentDate = new Date();
     let selectedDateStr = todayStr;
     let wagePerGongsu = 150000;
-    let targetGongsu = 25;
+    let targetGongsu = 22;
     let satBonus = 0.5;
     let autoSatBonus = false;
     let gongsuData = {};
@@ -913,7 +910,7 @@
         if (savedWage) wagePerGongsu = parseInt(savedWage) || 150000;
 
         const savedTarget = localStorage.getItem("shipyard_target_gongsu");
-        if (savedTarget) targetGongsu = parseFloat(savedTarget) || 25;
+        if (savedTarget) targetGongsu = parseFloat(savedTarget) || 22;
 
         const savedBonus = localStorage.getItem("shipyard_sat_bonus");
         if (savedBonus !== null) satBonus = parseFloat(savedBonus);
@@ -1073,9 +1070,8 @@
       total = Math.round(total * 100) / 100;
       const gross = total * wagePerGongsu;
       const mealDeduct = mealCount * 500;
-      const estTax = Math.round(gross * 0.094);
-      const net = Math.max(0, gross - mealDeduct - estTax);
-      return { total, days, mealCount, gross, mealDeduct, estTax, net };
+      const net = Math.max(0, gross - mealDeduct);
+      return { total, days, mealCount, gross, mealDeduct, net };
     }
 
     function openPayslip(targetYear, targetMonth, isPayday) {
@@ -1095,9 +1091,8 @@
       document.getElementById("payslipBody").innerHTML = `
         <div class="payslip-row"><span>근무 일수</span><strong>${s.days}일</strong></div>
         <div class="payslip-row"><span>총 누적 공수 (목표 ${targetGongsu})</span><strong>${s.total}공수</strong></div>
-        <div class="payslip-row"><span>세전 급여 (${s.total} × ${fmtWon(wagePerGongsu)})</span><strong>${fmtWon(s.gross)}</strong></div>
+        <div class="payslip-row"><span>총 급여 (${s.total} × ${fmtWon(wagePerGongsu)})</span><strong>${fmtWon(s.gross)}</strong></div>
         <div class="payslip-row"><span>🍚 아침식대 공제 (${s.mealCount}회)</span><span style="color:var(--danger);">- ${fmtWon(s.mealDeduct)}</span></div>
-        <div class="payslip-row"><span>🏥 4대보험·세금 예상 (~9.4%)</span><span style="color:var(--text-sub);">- ${fmtWon(s.estTax)}</span></div>
         <div class="payslip-row total"><span>예상 실수령액</span><span>${fmtWon(s.net)}</span></div>
       `;
       document.getElementById("payslipModal").classList.add("open");
@@ -1265,7 +1260,7 @@
       const target = parseFloat(document.getElementById("targetGongsuInput").value);
       const bonus = parseFloat(document.getElementById("satBonusInput").value);
       wagePerGongsu = wage;
-      targetGongsu = isNaN(target) || target <= 0 ? 25 : target;
+      targetGongsu = isNaN(target) || target <= 0 ? 22 : target;
       satBonus = isNaN(bonus) || bonus < 0 ? 0.5 : bonus;
       autoSatBonus = document.getElementById("autoSatBonusInput").checked;
       saveWage();
