@@ -958,6 +958,7 @@
           <div class="w-box"><div class="w-loc">아주동</div><div class="w-temp">--°</div><div class="w-desc">로딩 중</div></div>
           <div class="w-box"><div class="w-loc">장승포동</div><div class="w-temp">--°</div><div class="w-desc">로딩 중</div></div>
         </div>
+        <div style="text-align:right;font-size:10px;color:var(--text-muted);margin-top:6px;"><a href="https://developer.apple.com/weatherkit/data-source-attribution/" target="_blank" style="color:var(--text-muted);text-decoration:none;">&#xF8FF; Weather</a></div>
       </div>
 
       <div class="quick-bar">
@@ -965,7 +966,7 @@
           <span style="font-size:14px; font-weight:700;">🍽️ 한화오션 식단표</span>
           <span style="font-size:11px; color:var(--text-muted);" id="menuUpdatedAt">기준일 확인</span>
         </div>
-        <div class="main-tabs" style="margin-bottom:10px;">
+        <div class="main-tabs" style="grid-template-columns: repeat(2, 1fr); margin-bottom:10px;">
           <button class="main-tab-btn active" id="tabPul" onclick="switchVendor('pulmuone')">🌱 풀무원</button>
           <button class="main-tab-btn" id="tabWel" onclick="switchVendor('welliv')">🏢 웰리브</button>
         </div>
@@ -1759,8 +1760,44 @@
       });
     }
 
+    const DEFAULT_WEATHER_DATA = {"date": "2026-11-17", "places": [{"name": "옥포동", "min": 14, "max": 17, "dayRain": 70, "hours": {"2026-11-17T06": {"temp": 15, "desc": "흐림 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T07": {"temp": 15, "desc": "바람 💨", "rain": 0, "wind": 6.9}, "2026-11-17T08": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T09": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 7.8}, "2026-11-17T10": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 8.3}, "2026-11-17T11": {"temp": 17, "desc": "바람 💨", "rain": 1, "wind": 8.1}, "2026-11-17T12": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T13": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T14": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T15": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.1}, "2026-11-17T16": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.8}, "2026-11-17T17": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.3}, "2026-11-17T18": {"temp": 17, "desc": "흐림 ☁️", "rain": 0, "wind": 5.0}, "2026-11-17T19": {"temp": 16, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-17T20": {"temp": 16, "desc": "흐림 ☁️", "rain": 0, "wind": 4.7}, "2026-11-17T21": {"temp": 15, "desc": "구름 많음 ☁️", "rain": 0, "wind": 4.4}, "2026-11-17T22": {"temp": 15, "desc": "흐림 ☁️", "rain": 0, "wind": 4.4}, "2026-11-17T23": {"temp": 14, "desc": "이슬비 🌦️", "rain": 7, "wind": 4.4}, "2026-11-18T00": {"temp": 14, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-18T01": {"temp": 14, "desc": "이슬비 🌦️", "rain": 6, "wind": 3.9}, "2026-11-18T02": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 3, "wind": 3.1}, "2026-11-18T03": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}, "2026-11-18T04": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.5}, "2026-11-18T05": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}}}, {"name": "아주동", "min": 14, "max": 17, "dayRain": 70, "hours": {"2026-11-17T06": {"temp": 15, "desc": "흐림 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T07": {"temp": 15, "desc": "바람 💨", "rain": 0, "wind": 6.9}, "2026-11-17T08": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T09": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 7.8}, "2026-11-17T10": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 8.3}, "2026-11-17T11": {"temp": 17, "desc": "바람 💨", "rain": 1, "wind": 8.1}, "2026-11-17T12": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T13": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T14": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T15": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.4}, "2026-11-17T16": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.8}, "2026-11-17T17": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.3}, "2026-11-17T18": {"temp": 17, "desc": "흐림 ☁️", "rain": 0, "wind": 5.0}, "2026-11-17T19": {"temp": 16, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-17T20": {"temp": 16, "desc": "흐림 ☁️", "rain": 0, "wind": 4.7}, "2026-11-17T21": {"temp": 15, "desc": "구름 많음 ☁️", "rain": 0, "wind": 4.4}, "2026-11-17T22": {"temp": 15, "desc": "흐림 ☁️", "rain": 0, "wind": 4.7}, "2026-11-17T23": {"temp": 15, "desc": "이슬비 🌦️", "rain": 7, "wind": 4.4}, "2026-11-18T00": {"temp": 14, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-18T01": {"temp": 14, "desc": "이슬비 🌦️", "rain": 6, "wind": 3.9}, "2026-11-18T02": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 4, "wind": 3.1}, "2026-11-18T03": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}, "2026-11-18T04": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.5}, "2026-11-18T05": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}}}, {"name": "장승포동", "min": 14, "max": 17, "dayRain": 70, "hours": {"2026-11-17T06": {"temp": 16, "desc": "흐림 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T07": {"temp": 15, "desc": "바람 💨", "rain": 0, "wind": 6.9}, "2026-11-17T08": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T09": {"temp": 16, "desc": "바람 💨", "rain": 0, "wind": 8.1}, "2026-11-17T10": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 8.3}, "2026-11-17T11": {"temp": 17, "desc": "바람 💨", "rain": 1, "wind": 8.1}, "2026-11-17T12": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T13": {"temp": 17, "desc": "바람 💨", "rain": 0, "wind": 7.2}, "2026-11-17T14": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.7}, "2026-11-17T15": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 6.4}, "2026-11-17T16": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.8}, "2026-11-17T17": {"temp": 17, "desc": "구름 많음 ☁️", "rain": 0, "wind": 5.6}, "2026-11-17T18": {"temp": 17, "desc": "흐림 ☁️", "rain": 0, "wind": 5.0}, "2026-11-17T19": {"temp": 16, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-17T20": {"temp": 16, "desc": "흐림 ☁️", "rain": 0, "wind": 4.7}, "2026-11-17T21": {"temp": 15, "desc": "구름 많음 ☁️", "rain": 0, "wind": 4.4}, "2026-11-17T22": {"temp": 15, "desc": "흐림 ☁️", "rain": 0, "wind": 4.7}, "2026-11-17T23": {"temp": 15, "desc": "이슬비 🌦️", "rain": 7, "wind": 4.4}, "2026-11-18T00": {"temp": 14, "desc": "이슬비 🌦️", "rain": 9, "wind": 4.7}, "2026-11-18T01": {"temp": 14, "desc": "이슬비 🌦️", "rain": 6, "wind": 3.9}, "2026-11-18T02": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 4, "wind": 3.1}, "2026-11-18T03": {"temp": 14, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}, "2026-11-18T04": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.5}, "2026-11-18T05": {"temp": 13, "desc": "구름 많음 ☁️", "rain": 0, "wind": 2.8}}}]};
     let weatherLoading = false;
+    function getBakedWeatherForNow() {
+      try {
+        if (!DEFAULT_WEATHER_DATA || !Array.isArray(DEFAULT_WEATHER_DATA.places)) return null;
+        const now = new Date();
+        const kst = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000);
+        const pad = n => String(n).padStart(2, "0");
+        const hourKey = `${kst.getFullYear()}-${pad(kst.getMonth()+1)}-${pad(kst.getDate())}T${pad(kst.getHours())}`;
+        const list = DEFAULT_WEATHER_DATA.places.map(p => {
+          const h = p.hours && p.hours[hourKey];
+          if (!h) return null;
+          return {
+            name: p.name,
+            temp: h.temp,
+            min: p.min,
+            max: p.max,
+            rain: h.rain,
+            wind: h.wind,
+            desc: h.desc
+          };
+        });
+        if (list.every(Boolean)) {
+          return {
+            list,
+            timeText: `${pad(kst.getHours())}:00 예보 · Apple Weather`
+          };
+        }
+      } catch (e) {}
+      return null;
+    }
+
     async function loadWeather(force) {
+      const baked = getBakedWeatherForNow();
+      if (baked) {
+        renderWeatherList(baked.list, baked.timeText);
+        return;
+      }
       let cached = null;
       try {
         const raw = localStorage.getItem(WEATHER_CACHE_KEY);
