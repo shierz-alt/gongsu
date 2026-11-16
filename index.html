@@ -715,16 +715,6 @@
           <div class="pay-box-label">이번 달 예상 월급</div>
           <div class="pay-box-val" id="totalPay">0원</div>
           <div class="meal-deduct-sub" id="mealDeductInfo" style="display:none;"></div>
-          <button class="btn-payslip" onclick="openPayslip()">📄 급여 명세서</button>
-        </div>
-      </div>
-      <div class="goal-wrap">
-        <div class="goal-head">
-          <span class="goal-text" id="goalText">🎯 목표 25공수 중 0공수</span>
-          <span class="goal-pct" id="goalPct">0%</span>
-        </div>
-        <div class="goal-bar-bg">
-          <div class="goal-bar-fill" id="goalBarFill"></div>
         </div>
       </div>
     </div>
@@ -788,6 +778,18 @@
         <span>🍚 아침식사 (-500원)</span>
         <span id="breakfastStatus">안 먹음</span>
       </button>
+    </div>
+
+    <!-- Bottom Goal Gauge & Payslip -->
+    <div class="quick-bar" style="padding: 14px 16px;">
+      <div class="goal-head">
+        <span class="goal-text" id="goalText">🎯 목표 25공수 중 0공수</span>
+        <span class="goal-pct" id="goalPct">0%</span>
+      </div>
+      <div class="goal-bar-bg" style="margin-bottom: 12px;">
+        <div class="goal-bar-fill" id="goalBarFill"></div>
+      </div>
+      <button type="button" class="btn-backup" style="width:100%;" onclick="openPayslip()">📄 급여 명세서 보기</button>
     </div>
 
     </div>
