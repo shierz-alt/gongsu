@@ -883,6 +883,8 @@
         </div>
       </div>
 
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
+
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
     </div>
   </div>
@@ -1268,6 +1270,10 @@
       closeSettings();
       updateQuickLabels();
       renderCalendar();
+    }
+
+    function forceRefreshApp() {
+      location.replace(location.pathname + "?v=" + Date.now() + location.hash);
     }
 
     function exportBackup() {
