@@ -1060,7 +1060,27 @@
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
 
+      <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
+
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
+      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v1.0 · 조선소 공수 계산기</div>
+    </div>
+  </div>
+
+  <!-- Admin Stats Modal -->
+  <div class="modal-overlay" id="adminStatsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">👑 관리자 사용 통계</div>
+        <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeAdminStats()">✕</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-sub); margin-bottom:12px;">내 기기 접속은 통계에서 제외됩니다.</div>
+      <div class="payslip-box" id="adminStatsBody">불러오는 중...</div>
+      <div class="backup-row" style="margin-bottom:10px;">
+        <button type="button" class="btn-backup" onclick="loadAdminStats()">🔄 새로고침</button>
+        <button type="button" class="btn-backup" style="color:var(--danger);" onclick="disableAdminMode()">관리자 끄기</button>
+      </div>
+      <button class="btn-save" onclick="closeAdminStats()">닫기</button>
     </div>
   </div>
 
@@ -1938,6 +1958,135 @@
     loadData();
     selectDate(selectedDateStr);
     checkPayday();
+
+    // Admin & Usage Analytics
+    const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
+    const ADMIN_PIN = "0847";
+    let versionTapCount = 0;
+    let versionTapTimer = null;
+
+    function isAdminMode() {
+      try { return localStorage.getItem("gongsu_admin_mode") === "1"; } catch (e) { return false; }
+    }
+
+    function updateAdminUI() {
+      const btn = document.getElementById("adminStatsBtn");
+      if (btn) btn.style.display = isAdminMode() ? "block" : "none";
+    }
+
+    function initAdminFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("admin") === ADMIN_PIN) {
+          localStorage.setItem("gongsu_admin_mode", "1");
+          params.delete("admin");
+          const qs = params.toString();
+          const cleanUrl = window.location.pathname + (qs ? "?" + qs : "") + window.location.hash;
+          window.history.replaceState(null, "", cleanUrl);
+          updateAdminUI();
+          setTimeout(() => { alert("👑 관리자 모드가 켜졌습니다.\n이제 [설정 > 관리자 통계 보기]에서 사용자 수를 확인할 수 있어요."); }, 200);
+        } else {
+          updateAdminUI();
+        }
+      } catch (e) {}
+    }
+
+    function handleVersionTap() {
+      versionTapCount++;
+      clearTimeout(versionTapTimer);
+      versionTapTimer = setTimeout(() => { versionTapCount = 0; }, 2000);
+      if (versionTapCount >= 5) {
+        versionTapCount = 0;
+        if (isAdminMode()) {
+          closeSettings();
+          openAdminStats();
+          return;
+        }
+        const pin = prompt("관리자 PIN을 입력하세요:");
+        if (pin === ADMIN_PIN) {
+          localStorage.setItem("gongsu_admin_mode", "1");
+          updateAdminUI();
+          alert("👑 관리자 모드가 켜졌습니다.");
+        }
+      }
+    }
+
+    function disableAdminMode() {
+      if (confirm("이 기기에서 관리자 모드를 끌까요?")) {
+        localStorage.removeItem("gongsu_admin_mode");
+        updateAdminUI();
+        closeAdminStats();
+      }
+    }
+
+    function getKstDayKey(offsetDays = 0) {
+      const d = new Date(Date.now() + 9 * 3600 * 1000 + offsetDays * 86400 * 1000);
+      return d.toISOString().slice(0, 10).replace(/-/g, "");
+    }
+
+    function trackUsage() {
+      if (isAdminMode()) return;
+      try {
+        const todayKey = getKstDayKey(0);
+        if (!localStorage.getItem("gongsu_counted_user_v1")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_users`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_counted_user_v1", "1");
+          }).catch(() => {});
+        }
+        if (localStorage.getItem("gongsu_counted_day_v1") !== todayKey) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_day_${todayKey}`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_counted_day_v1", todayKey);
+          }).catch(() => {});
+        }
+        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
+      } catch (e) {}
+    }
+
+    async function fetchStatValue(key) {
+      try {
+        const res = await fetch(`${STATS_BASE}/get/${key}`);
+        if (res.status === 404) return 0;
+        if (!res.ok) return "-";
+        const data = await res.json();
+        return Number(data.value ?? 0);
+      } catch (e) {
+        return "-";
+      }
+    }
+
+    async function loadAdminStats() {
+      const box = document.getElementById("adminStatsBody");
+      box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
+      const todayKey = getKstDayKey(0);
+      const yestKey = getKstDayKey(-1);
+      const [users, todayUsers, yestUsers, views] = await Promise.all([
+        fetchStatValue("shierz_gongsu_prod_users"),
+        fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`),
+        fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
+        fetchStatValue("shierz_gongsu_prod_views")
+      ]);
+      const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
+      const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : v;
+      box.innerHTML = `
+        <div class="payslip-row"><span>👥 누적 사용자 (기기 기준)</span><strong style="color:var(--accent);">${fmt(users)}</strong></div>
+        <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
+        <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
+        <div class="payslip-row" style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;"><span>👀 총 앱 실행 횟수</span><strong>${fmtCnt(views)}</strong></div>
+      `;
+    }
+
+    function openAdminStats() {
+      closeSettings();
+      document.getElementById("adminStatsModal").classList.add("open");
+      loadAdminStats();
+    }
+
+    function closeAdminStats() {
+      document.getElementById("adminStatsModal").classList.remove("open");
+    }
+
+    initAdminFromUrl();
+    trackUsage();
   </script>
 </body>
 </html>
