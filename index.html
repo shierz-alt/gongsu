@@ -855,9 +855,10 @@
         <div class="header-title">⚓ 조선소 공수 계산기</div>
         <div class="header-subtitle" id="unitRateDisplay">1공수 기준: 150,000원</div>
       </div>
-      <button class="btn-settings" onclick="openSettings()">
-        ⚙️ 설정
-      </button>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button class="btn-settings" onclick="openGuideModal()" title="사용법">❓</button>
+        <button class="btn-settings" onclick="openSettings()">⚙️ 설정</button>
+      </div>
     </div>
 
     <div class="toast-banner" id="toastBanner"></div>
@@ -1174,6 +1175,35 @@
       </div>
       <textarea id="feedbackInput" class="memo-input" rows="4" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
       <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">제보 보내기</button>
+    </div>
+  </div>
+
+  <!-- 10초 사용법 모달 -->
+  <div class="modal-overlay" id="guideModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">📖 10초 간단 사용법</div>
+        <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeGuideModal()">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>1️⃣ 일당·세금 맞추기</strong><br>
+          <span style="color:var(--text-sub);">오른쪽 위 <b>⚙️ 설정</b>에서 본인 일당과 3.3%·4대보험 공제 여부를 먼저 맞춰주세요.</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>2️⃣ 원터치 공수 입력</strong><br>
+          <span style="color:var(--text-sub);">달력 날짜를 누르고 아래 버튼(1.0, 연장, 특근)을 탭하면 자동 합산돼요. 아침식대(-500원)와 현장 메모도 기록할 수 있어요.</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>3️⃣ 식단·통근버스 ⭐ 즐겨찾기</strong><br>
+          <span style="color:var(--text-sub);">자주 가는 식당이나 타는 버스 오른쪽 <b>☆</b>을 누르면 탭 맨 위에 고정됩니다.</span>
+        </div>
+        <div style="background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.45); border-radius:10px; padding:10px 12px; color:#fde68a;">
+          <strong>4️⃣ 꼭 홈 화면에 추가해서 쓰세요!</strong><br>
+          네이버 앱 안에서 쓰면 기록이 날아갈 수 있어요. <b>사파리(아이폰)</b>나 <b>크롬·삼성인터넷(갤럭시)</b>으로 열어 <b>[홈 화면에 추가]</b> 해주세요.
+        </div>
+      </div>
+      <button type="button" class="btn-save" onclick="closeGuideModal()">확인하고 시작하기</button>
     </div>
   </div>
 
@@ -2460,8 +2490,26 @@
       document.getElementById("adminStatsModal").classList.remove("open");
     }
 
+    function openGuideModal() {
+      document.getElementById("guideModal").classList.add("open");
+    }
+
+    function closeGuideModal() {
+      localStorage.setItem("gongsu_guide_seen_v1", "1");
+      document.getElementById("guideModal").classList.remove("open");
+    }
+
+    function initGuide() {
+      try {
+        if (!isAdminMode() && !localStorage.getItem("gongsu_guide_seen_v1")) {
+          setTimeout(openGuideModal, 300);
+        }
+      } catch (e) {}
+    }
+
     initAdminFromUrl();
     trackUsage();
+    initGuide();
   </script>
 </body>
 </html>
