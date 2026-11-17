@@ -1700,6 +1700,11 @@
             if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
+        if (!isAdminMode() && Object.keys(gongsuData).length >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_heavy3`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
+          }).catch(() => {});
+        }
       }
       saveGongsu();
       renderCalendar();
@@ -2382,6 +2387,11 @@
             if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
+        if (Object.keys(gongsuData).length >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_heavy3`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
+          }).catch(() => {});
+        }
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
       } catch (e) {}
     }
@@ -2522,9 +2532,10 @@
       box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
       const todayKey = getKstDayKey(0);
       const yestKey = getKstDayKey(-1);
-      const [users, activeUsers, todayUsers, todayReturn, yestUsers, views, tabGongsu, tabMeal, tabBus, feedbacks] = await Promise.all([
+      const [users, activeUsers, heavy3Users, todayUsers, todayReturn, yestUsers, views, tabGongsu, tabMeal, tabBus, feedbacks] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
         fetchStatValue("shierz_gongsu_prod_active"),
+        fetchStatValue("shierz_gongsu_prod_heavy3"),
         fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`),
         fetchStatValue(`shierz_gongsu_prod_return_${todayKey}`),
         fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
@@ -2552,7 +2563,8 @@
         : `<div style="color:var(--text-muted);font-size:12px;padding:6px 0;">아직 들어온 제보가 없어요.</div>`;
       box.innerHTML = `
         <div class="payslip-row"><span>👥 누적 사용자 (기기 기준)</span><strong style="color:var(--accent);">${fmt(users)}</strong></div>
-        <div class="payslip-row"><span>✍️ 공수 입력 실사용자</span><strong style="color:#f59e0b;">${fmt(activeUsers)}</strong></div>
+        <div class="payslip-row"><span>✍️ 공수 입력 실사용자 (1일+)</span><strong style="color:#f59e0b;">${fmt(activeUsers)}</strong></div>
+        <div class="payslip-row"><span>🔥 꾸준히 입력 찐단골 (3일+)</span><strong style="color:#fb7185;">${fmt(heavy3Users)}</strong></div>
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
         <div class="payslip-row"><span>🔁 오늘 재방문 (단골)</span><strong style="color:#38bdf8;">${fmt(todayReturn)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
