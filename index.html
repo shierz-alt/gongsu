@@ -1897,7 +1897,7 @@
     function renderDayTabs() {
       const box = document.getElementById("dayTabs");
       box.innerHTML = "";
-      const list = currentVendor === "pulmuone" ? (menuData.pulmuone_days || []) : (menuData.welliv || []);
+      const list = currentVendor === "pulmuone" ? (menuData.pulmuone_days || []) : (menuData.welliv || menuData.welliv_days || []);
       list.forEach((d, idx) => {
         const btn = document.createElement("button");
         btn.className = "sub-btn" + (idx === currentDayIdx ? " active" : "");
@@ -1915,7 +1915,7 @@
       });
       const dayObj = currentVendor === "pulmuone"
         ? (menuData.pulmuone_days || [])[currentDayIdx]
-        : (menuData.welliv || [])[currentDayIdx];
+        : (menuData.welliv || menuData.welliv_days || [])[currentDayIdx];
       const rawList = (dayObj && dayObj.meals && dayObj.meals[currentMeal]) || [];
       if (!rawList.length) {
         box.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:16px 0;font-size:13px;">${currentMeal} 메뉴가 없습니다.</div>`;
