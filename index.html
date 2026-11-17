@@ -2331,8 +2331,11 @@
 
     async function fetchAdminFeedbacks() {
       let archived = [];
+      let deleted = [];
       try { archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]"); } catch (e) { archived = []; }
-      const map = new Map(archived.map(item => [item.id, item]));
+      try { deleted = JSON.parse(localStorage.getItem("gongsu_admin_fb_deleted") || "[]"); } catch (e) { deleted = []; }
+      const deletedSet = new Set(deleted);
+      const map = new Map(archived.filter(item => !deletedSet.has(item.id)).map(item => [item.id, item]));
       try {
         const res = await fetch(`https://ntfy.sh/${FB_TOPIC}/json?poll=1`);
         if (res.ok) {
@@ -2340,7 +2343,7 @@
           txt.split("\n").filter(Boolean).forEach(line => {
             try {
               const obj = JSON.parse(line);
-              if (obj.event === "message" && obj.message) {
+              if (obj.event === "message" && obj.message && !deletedSet.has(obj.id)) {
                 map.set(obj.id, { id: obj.id, time: obj.time, message: obj.message });
               }
             } catch (e) {}
@@ -2357,6 +2360,9 @@
         const archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]");
         const filtered = archived.filter(x => x.id !== id);
         localStorage.setItem("gongsu_admin_fb_archive", JSON.stringify(filtered));
+        const deleted = JSON.parse(localStorage.getItem("gongsu_admin_fb_deleted") || "[]");
+        if (!deleted.includes(id)) deleted.push(id);
+        localStorage.setItem("gongsu_admin_fb_deleted", JSON.stringify(deleted.slice(-200)));
         loadAdminStats();
       } catch (e) {}
     }
