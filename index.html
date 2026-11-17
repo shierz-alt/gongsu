@@ -708,7 +708,7 @@
       align-items: center;
       justify-content: center;
       z-index: 999;
-      padding: 20px;
+      padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
     }
 
     .modal-overlay.open { display: flex; }
@@ -720,6 +720,9 @@
       padding: 20px;
       width: 100%;
       max-width: 380px;
+      max-height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       display: flex;
       flex-direction: column;
       gap: 16px;
