@@ -2333,25 +2333,34 @@
       if (isAdminMode()) return;
       try {
         const todayKey = getKstDayKey(0);
+        const prevCountedDay = localStorage.getItem("gongsu_counted_day_v1");
         if (!localStorage.getItem("gongsu_counted_user_v1")) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_users`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_user_v1", "1");
           }).catch(() => {});
         }
-        if (localStorage.getItem("gongsu_counted_day_v1") !== todayKey) {
+        if (prevCountedDay !== todayKey) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_day_${todayKey}`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_day_v1", todayKey);
           }).catch(() => {});
         }
         let visitDays = [];
         try { visitDays = JSON.parse(localStorage.getItem("gongsu_visit_days_v1") || "[]"); } catch (e) { visitDays = []; }
+        if (prevCountedDay && prevCountedDay !== todayKey && !visitDays.includes(prevCountedDay)) {
+          visitDays.push(prevCountedDay);
+        }
         if (!visitDays.includes(todayKey)) {
           visitDays.push(todayKey);
-          localStorage.setItem("gongsu_visit_days_v1", JSON.stringify(visitDays.slice(-60)));
         }
+        localStorage.setItem("gongsu_visit_days_v1", JSON.stringify(visitDays.slice(-60)));
         if (visitDays.length >= 2 && localStorage.getItem("gongsu_counted_return_v1") !== todayKey) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_return_${todayKey}`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_return_v1", todayKey);
+          }).catch(() => {});
+        }
+        if (Object.keys(gongsuData).length > 0 && !localStorage.getItem("gongsu_active_user_v1")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_active`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
