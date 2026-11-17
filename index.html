@@ -978,6 +978,38 @@
       <div class="cmp-list" id="monthlyCompareList"></div>
     </div>
 
+    <!-- Field Notebook -->
+    <div class="quick-bar" style="padding: 14px 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-size:13px; font-weight:700;">📒 내 현장 수첩</span>
+        <span style="font-size:11px; color:var(--text-muted);" id="notebookSavedMsg">자동 저장</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+        <input type="text" class="memo-input" id="nbZoneInput" placeholder="🚢 내 호선·구역 (예: 2341호선 / D안벽)" oninput="saveNotebook()">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input type="text" class="memo-input" id="nbBossInput" placeholder="📞 팀장님/반장님 번호 (예: 010-1234-5678)" oninput="saveNotebook()">
+          <a id="nbBossCallBtn" href="#" style="display:none; background:var(--success); color:#0b1120; font-size:12px; font-weight:800; padding:9px 12px; border-radius:10px; text-decoration:none; white-space:nowrap;">📞 전화</a>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--card-border); padding-top:10px;">
+        <div style="font-size:11px; color:var(--text-sub); font-weight:700; margin-bottom:6px;">📌 한화오션 주요 연락처 (터치 시 통화)</div>
+        <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--text-sub);">한화오션 거제사업장 대표</span>
+            <a href="tel:0557352114" style="color:var(--accent); font-weight:700; text-decoration:none;">055-735-2114</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--text-sub);">웰리브 수송지원부 (통근버스)</span>
+            <a href="tel:0557347493" style="color:var(--accent); font-weight:700; text-decoration:none;">055-734-7493</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:var(--text-sub);">웰리브 급식본부 (사내식당)</span>
+            <a href="tel:0556802023" style="color:var(--accent); font-weight:700; text-decoration:none;">055-680-2023</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     </div>
 
     <!-- Meal & Weather View -->
@@ -1102,7 +1134,9 @@
         </div>
       </div>
 
-      <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
+
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="openFeedbackModal()">💬 오류·시간표 수정 제보</button>
 
       <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
 
@@ -1125,6 +1159,21 @@
         <button type="button" class="btn-backup" style="color:var(--danger);" onclick="disableAdminMode()">관리자 끄기</button>
       </div>
       <button class="btn-save" onclick="closeAdminStats()">닫기</button>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div class="modal-overlay" id="feedbackModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">💬 오류·시간표 수정 제보</div>
+        <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeFeedbackModal()">✕</button>
+      </div>
+      <div style="font-size:13px; color:var(--text-main); line-height:1.55; margin-bottom:14px;">
+        통근버스 시간표 변경이나 추가하고 싶은 기능이 있으면, 이 앱을 공유받은 <strong>카페 게시글 댓글</strong>로 편하게 남겨주세요! 바로 확인해서 업데이트해 드립니다.
+      </div>
+      <a href="https://github.com/shierz-alt/gongsu/issues/new" target="_blank" class="btn-backup" style="display:block; width:100%; text-align:center; text-decoration:none; margin-bottom:10px;">🔗 GitHub 이슈로 바로 남기기</a>
+      <button class="btn-save" onclick="closeFeedbackModal()">확인</button>
     </div>
   </div>
 
@@ -1581,6 +1630,7 @@
 
     function setGongsu(val) {
       if (!selectedDateStr) return;
+      trackFeatureHit("gongsu");
       if (val === 0) {
         delete gongsuData[selectedDateStr];
       } else {
@@ -1726,11 +1776,13 @@
       document.getElementById("mainTabMeal").classList.toggle("active", isMeal);
       document.getElementById("mainTabBus").classList.toggle("active", isBus);
       if (isMeal) {
+        trackFeatureHit("meal");
         document.getElementById("dayTabs").style.display = "flex";
         loadWeather();
         renderDayTabs();
         renderMenus();
       } else if (isBus) {
+        trackFeatureHit("bus");
         initBusView();
       }
     }
@@ -2234,16 +2286,73 @@
       }
     }
 
+    function trackFeatureHit(name) {
+      if (isAdminMode()) return;
+      try {
+        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_tab_${name}`).catch(() => {});
+      } catch (e) {}
+    }
+
+    function openFeedbackModal() {
+      closeSettings();
+      document.getElementById("feedbackModal").classList.add("open");
+    }
+
+    function closeFeedbackModal() {
+      document.getElementById("feedbackModal").classList.remove("open");
+    }
+
+    function loadNotebook() {
+      try {
+        const nb = JSON.parse(localStorage.getItem("shipyard_notebook") || "{}");
+        const zEl = document.getElementById("nbZoneInput");
+        const bEl = document.getElementById("nbBossInput");
+        if (zEl) zEl.value = nb.zone || "";
+        if (bEl) bEl.value = nb.boss || "";
+        updateBossCallBtn(nb.boss || "");
+      } catch (e) {}
+    }
+
+    function updateBossCallBtn(val) {
+      const btn = document.getElementById("nbBossCallBtn");
+      if (!btn) return;
+      const digits = (val || "").replace(/[^0-9+]/g, "");
+      if (digits.length >= 8) {
+        btn.href = `tel:${digits}`;
+        btn.style.display = "inline-block";
+      } else {
+        btn.style.display = "none";
+      }
+    }
+
+    function saveNotebook() {
+      const zone = (document.getElementById("nbZoneInput").value || "").trim();
+      const boss = (document.getElementById("nbBossInput").value || "").trim();
+      localStorage.setItem("shipyard_notebook", JSON.stringify({ zone, boss }));
+      updateBossCallBtn(boss);
+      const msg = document.getElementById("notebookSavedMsg");
+      if (msg) {
+        msg.innerText = "저장됨 ✓";
+        clearTimeout(window._nbTimer);
+        window._nbTimer = setTimeout(() => { msg.innerText = "자동 저장"; }, 1500);
+      }
+    }
+
+    loadNotebook();
+
     async function loadAdminStats() {
       const box = document.getElementById("adminStatsBody");
       box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
       const todayKey = getKstDayKey(0);
       const yestKey = getKstDayKey(-1);
-      const [users, todayUsers, yestUsers, views] = await Promise.all([
+      const [users, todayUsers, yestUsers, views, tabGongsu, tabMeal, tabBus] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
         fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`),
         fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
-        fetchStatValue("shierz_gongsu_prod_views")
+        fetchStatValue("shierz_gongsu_prod_views"),
+        fetchStatValue("shierz_gongsu_prod_tab_gongsu"),
+        fetchStatValue("shierz_gongsu_prod_tab_meal"),
+        fetchStatValue("shierz_gongsu_prod_tab_bus")
       ]);
       const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
       const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : v;
@@ -2252,6 +2361,10 @@
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
         <div class="payslip-row" style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;"><span>👀 총 앱 실행 횟수</span><strong>${fmtCnt(views)}</strong></div>
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;">🔥 기능별 사용량</div>
+        <div class="payslip-row"><span>📅 공수 입력</span><strong>${fmtCnt(tabGongsu)}</strong></div>
+        <div class="payslip-row"><span>🍽️ 식단·날씨 조회</span><strong>${fmtCnt(tabMeal)}</strong></div>
+        <div class="payslip-row"><span>🚌 통근버스 조회</span><strong>${fmtCnt(tabBus)}</strong></div>
       `;
     }
 
