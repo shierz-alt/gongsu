@@ -1169,11 +1169,11 @@
         <div class="modal-title">💬 오류·시간표 수정 제보</div>
         <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeFeedbackModal()">✕</button>
       </div>
-      <div style="font-size:13px; color:var(--text-main); line-height:1.55; margin-bottom:14px;">
-        통근버스 시간표 변경이나 추가하고 싶은 기능이 있으면, 이 앱을 공유받은 <strong>카페 게시글 댓글</strong>로 편하게 남겨주세요! 바로 확인해서 업데이트해 드립니다.
+      <div style="font-size:12px; color:var(--text-sub); line-height:1.5; margin-bottom:10px;">
+        통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 바로 전달됩니다. (익명 전송)
       </div>
-      <a href="https://github.com/shierz-alt/gongsu/issues/new" target="_blank" class="btn-backup" style="display:block; width:100%; text-align:center; text-decoration:none; margin-bottom:10px;">🔗 GitHub 이슈로 바로 남기기</a>
-      <button class="btn-save" onclick="closeFeedbackModal()">확인</button>
+      <textarea id="feedbackInput" class="memo-input" rows="4" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
+      <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">제보 보내기</button>
     </div>
   </div>
 
@@ -2293,13 +2293,72 @@
       } catch (e) {}
     }
 
+    const FB_TOPIC = "shierz_gongsu_fb_0847_k9p2";
+
     function openFeedbackModal() {
       closeSettings();
+      const inp = document.getElementById("feedbackInput");
+      if (inp) inp.value = "";
       document.getElementById("feedbackModal").classList.add("open");
     }
 
     function closeFeedbackModal() {
       document.getElementById("feedbackModal").classList.remove("open");
+    }
+
+    async function submitFeedback() {
+      const inp = document.getElementById("feedbackInput");
+      const btn = document.getElementById("feedbackSendBtn");
+      const msg = (inp ? inp.value : "").trim();
+      if (!msg) { alert("내용을 입력해 주세요."); return; }
+      btn.disabled = true;
+      btn.innerText = "보내는 중...";
+      try {
+        const res = await fetch(`https://ntfy.sh/${FB_TOPIC}`, {
+          method: "POST",
+          body: msg
+        });
+        if (!res.ok) throw new Error("http " + res.status);
+        closeFeedbackModal();
+        alert("✅ 관리자에게 전달되었습니다! 감사합니다.");
+      } catch (e) {
+        alert("전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "제보 보내기";
+      }
+    }
+
+    async function fetchAdminFeedbacks() {
+      let archived = [];
+      try { archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]"); } catch (e) { archived = []; }
+      const map = new Map(archived.map(item => [item.id, item]));
+      try {
+        const res = await fetch(`https://ntfy.sh/${FB_TOPIC}/json?poll=1`);
+        if (res.ok) {
+          const txt = await res.text();
+          txt.split("\n").filter(Boolean).forEach(line => {
+            try {
+              const obj = JSON.parse(line);
+              if (obj.event === "message" && obj.message) {
+                map.set(obj.id, { id: obj.id, time: obj.time, message: obj.message });
+              }
+            } catch (e) {}
+          });
+        }
+      } catch (e) {}
+      const list = Array.from(map.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
+      localStorage.setItem("gongsu_admin_fb_archive", JSON.stringify(list.slice(0, 50)));
+      return list;
+    }
+
+    function deleteAdminFeedback(id) {
+      try {
+        const archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]");
+        const filtered = archived.filter(x => x.id !== id);
+        localStorage.setItem("gongsu_admin_fb_archive", JSON.stringify(filtered));
+        loadAdminStats();
+      } catch (e) {}
     }
 
     function loadNotebook() {
@@ -2345,17 +2404,32 @@
       box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
       const todayKey = getKstDayKey(0);
       const yestKey = getKstDayKey(-1);
-      const [users, todayUsers, yestUsers, views, tabGongsu, tabMeal, tabBus] = await Promise.all([
+      const [users, todayUsers, yestUsers, views, tabGongsu, tabMeal, tabBus, feedbacks] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
         fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`),
         fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
         fetchStatValue("shierz_gongsu_prod_views"),
         fetchStatValue("shierz_gongsu_prod_tab_gongsu"),
         fetchStatValue("shierz_gongsu_prod_tab_meal"),
-        fetchStatValue("shierz_gongsu_prod_tab_bus")
+        fetchStatValue("shierz_gongsu_prod_tab_bus"),
+        fetchAdminFeedbacks()
       ]);
       const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
       const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : v;
+      const fbHtml = feedbacks.length
+        ? feedbacks.map(f => {
+            const dt = f.time ? new Date(f.time * 1000) : null;
+            const tStr = dt ? `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : "";
+            const safeMsg = String(f.message).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            return `<div style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+                <span style="color:var(--text-muted);font-size:10px;">${tStr}</span>
+                <button type="button" onclick="deleteAdminFeedback('${f.id}')" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;">✕</button>
+              </div>
+              <div style="color:var(--text-main);line-height:1.4;">${safeMsg}</div>
+            </div>`;
+          }).join("")
+        : `<div style="color:var(--text-muted);font-size:12px;padding:6px 0;">아직 들어온 제보가 없어요.</div>`;
       box.innerHTML = `
         <div class="payslip-row"><span>👥 누적 사용자 (기기 기준)</span><strong style="color:var(--accent);">${fmt(users)}</strong></div>
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
@@ -2365,6 +2439,8 @@
         <div class="payslip-row"><span>📅 공수 입력</span><strong>${fmtCnt(tabGongsu)}</strong></div>
         <div class="payslip-row"><span>🍽️ 식단·날씨 조회</span><strong>${fmtCnt(tabMeal)}</strong></div>
         <div class="payslip-row"><span>🚌 통근버스 조회</span><strong>${fmtCnt(tabBus)}</strong></div>
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:12px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📬 들어온 제보·건의 (${feedbacks.length}건)</div>
+        <div style="max-height:160px;overflow-y:auto;">${fbHtml}</div>
       `;
     }
 
