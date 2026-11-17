@@ -1086,6 +1086,15 @@
       </label>
 
       <div class="input-group">
+        <label class="input-label">세금·4대보험 공제</label>
+        <select class="input-field" id="taxModeInput" style="font-size:14px;">
+          <option value="none">공제 없음 (일당 포함 기준)</option>
+          <option value="3.3">3.3% 공제 (사업소득)</option>
+          <option value="4ins">4대보험 공제 (약 9.4%)</option>
+        </select>
+      </div>
+
+      <div class="input-group">
         <label class="input-label">기록 백업 / 복원 (주소 변경 시)</label>
         <div class="backup-row">
           <button type="button" class="btn-backup" onclick="exportBackup()">📋 기록 복사</button>
@@ -1132,6 +1141,7 @@
     let targetGongsu = 22;
     let satBonus = 0.5;
     let autoSatBonus = false;
+    let taxMode = "none";
     let gongsuData = {};
     let breakfastData = {};
     let memoData = {};
@@ -1150,6 +1160,9 @@
 
         const savedAutoSat = localStorage.getItem("shipyard_auto_sat");
         if (savedAutoSat !== null) autoSatBonus = savedAutoSat === "true";
+
+        const savedTaxMode = localStorage.getItem("shipyard_tax_mode");
+        if (savedTaxMode) taxMode = savedTaxMode;
 
         const savedBreakfast = localStorage.getItem("shipyard_breakfast");
         if (savedBreakfast) breakfastData = JSON.parse(savedBreakfast);
@@ -1210,6 +1223,7 @@
       localStorage.setItem("shipyard_target_gongsu", targetGongsu.toString());
       localStorage.setItem("shipyard_sat_bonus", satBonus.toString());
       localStorage.setItem("shipyard_auto_sat", autoSatBonus.toString());
+      localStorage.setItem("shipyard_tax_mode", taxMode);
     }
 
     const fmtWon = (num) => Math.round(num).toLocaleString("ko-KR") + "원";
@@ -1283,14 +1297,16 @@
       document.getElementById("summaryMonthLabel").innerText = `${year}년 ${month}월 누적`;
       document.getElementById("unitRateDisplay").innerText = `1공수 기준: ${fmtWon(wagePerGongsu)}`;
 
-      const mealDeduct = mealCount * 500;
-      const totalAmount = Math.max(0, total * wagePerGongsu - mealDeduct);
-      document.getElementById("totalPay").innerText = fmtWon(totalAmount);
+      const st = calcMonthStats(year, month);
+      document.getElementById("totalPay").innerText = fmtWon(st.net);
 
       const mealInfoEl = document.getElementById("mealDeductInfo");
-      if (mealCount > 0) {
+      const deductParts = [];
+      if (mealCount > 0) deductParts.push(`🍚 아침 ${mealCount}회 (-${fmtWon(st.mealDeduct)})`);
+      if (st.taxDeduct > 0) deductParts.push(`${st.taxLabel} (-${fmtWon(st.taxDeduct)})`);
+      if (deductParts.length) {
         mealInfoEl.style.display = "block";
-        mealInfoEl.innerText = `🍚 아침 ${mealCount}회 (-${fmtWon(mealDeduct)})`;
+        mealInfoEl.innerText = deductParts.join(" · ");
       } else {
         mealInfoEl.style.display = "none";
       }
@@ -1365,8 +1381,11 @@
       total = Math.round(total * 100) / 100;
       const gross = total * wagePerGongsu;
       const mealDeduct = mealCount * 500;
-      const net = Math.max(0, gross - mealDeduct);
-      return { total, days, mealCount, gross, mealDeduct, net };
+      const taxRate = taxMode === "3.3" ? 0.033 : (taxMode === "4ins" ? 0.094 : 0);
+      const taxLabel = taxMode === "3.3" ? "3.3% 세금" : (taxMode === "4ins" ? "4대보험(~9.4%)" : "");
+      const taxDeduct = Math.round(gross * taxRate);
+      const net = Math.max(0, gross - mealDeduct - taxDeduct);
+      return { total, days, mealCount, gross, mealDeduct, taxDeduct, taxLabel, net };
     }
 
     function openPayslip(targetYear, targetMonth, isPayday) {
@@ -1383,11 +1402,16 @@
       document.getElementById("payslipSub").innerText =
         `정산 대상: ${y}년 ${m}월 근무분 · 지급일 ${payYear}년 ${payMonth}월 15일`;
 
+      const taxRow = s.taxDeduct > 0
+        ? `<div class="payslip-row"><span>🧾 ${s.taxLabel} 공제</span><span style="color:var(--danger);">- ${fmtWon(s.taxDeduct)}</span></div>`
+        : "";
+
       document.getElementById("payslipBody").innerHTML = `
         <div class="payslip-row"><span>근무 일수</span><strong>${s.days}일</strong></div>
         <div class="payslip-row"><span>총 누적 공수 (목표 ${targetGongsu})</span><strong>${s.total}공수</strong></div>
         <div class="payslip-row"><span>총 급여 (${s.total} × ${fmtWon(wagePerGongsu)})</span><strong>${fmtWon(s.gross)}</strong></div>
         <div class="payslip-row"><span>🍚 아침식대 공제 (${s.mealCount}회)</span><span style="color:var(--danger);">- ${fmtWon(s.mealDeduct)}</span></div>
+        ${taxRow}
         <div class="payslip-row total"><span>예상 실수령액</span><span>${fmtWon(s.net)}</span></div>
       `;
       document.getElementById("payslipModal").classList.add("open");
@@ -1595,6 +1619,7 @@
       document.getElementById("targetGongsuInput").value = targetGongsu;
       document.getElementById("satBonusInput").value = satBonus;
       document.getElementById("autoSatBonusInput").checked = autoSatBonus;
+      document.getElementById("taxModeInput").value = taxMode;
       document.getElementById("settingsModal").classList.add("open");
     }
 
@@ -1610,6 +1635,7 @@
       targetGongsu = isNaN(target) || target <= 0 ? 22 : target;
       satBonus = isNaN(bonus) || bonus < 0 ? 0.5 : bonus;
       autoSatBonus = document.getElementById("autoSatBonusInput").checked;
+      taxMode = document.getElementById("taxModeInput").value || "none";
       saveWage();
       closeSettings();
       updateQuickLabels();
