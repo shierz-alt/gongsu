@@ -856,6 +856,58 @@
       font-weight: 700;
       text-align: center;
     }
+    .notice-banner {
+      display: none;
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fcd34d;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .update-toast {
+      display: none;
+      background: rgba(56, 189, 248, 0.18);
+      border: 1px solid rgba(56, 189, 248, 0.55);
+      color: #bae6fd;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .stat-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; margin: 4px 0; }
+    .stat-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 999px; overflow: hidden; }
+    .stat-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+    .rate-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+    .rate-btn {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px 4px;
+      color: var(--text-sub);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .rate-btn.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.16);
+      color: var(--text-main);
+    }
 
   </style>
 </head>
@@ -869,6 +921,19 @@
       <div style="display:flex; gap:6px; align-items:center;">
         <button class="btn-settings" onclick="openGuideModal()" title="사용법">❓</button>
         <button class="btn-settings" onclick="openSettings()">⚙️ 설정</button>
+      </div>
+    </div>
+
+    <div class="notice-banner" id="adminNoticeBanner">
+      <span id="adminNoticeText"></span>
+      <button type="button" onclick="dismissNoticeBanner()" style="background:none;border:none;color:#fcd34d;font-size:14px;cursor:pointer;padding:0 2px;">✕</button>
+    </div>
+
+    <div class="update-toast" id="updateToastBanner">
+      <span>✨ 새 기능이 업데이트됐어요! (<span id="updateToastVer"></span>)</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button type="button" onclick="applyUpdateToast()" style="background:#38bdf8;color:#0b1120;border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer;">새로고침</button>
+        <button type="button" onclick="dismissUpdateToast()" style="background:none;border:none;color:#bae6fd;font-size:14px;cursor:pointer;">✕</button>
       </div>
     </div>
 
@@ -1159,12 +1224,14 @@
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
 
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v23)</button>
+
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="openFeedbackModal()">💬 오류·시간표 수정 제보</button>
 
       <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
 
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
-      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v1.0 · 조선소 공수 계산기</div>
+      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v23 · 조선소 공수 계산기</div>
     </div>
   </div>
 
@@ -1175,7 +1242,15 @@
         <div class="modal-title">👑 관리자 사용 통계</div>
         <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeAdminStats()">✕</button>
       </div>
-      <div style="font-size:12px; color:var(--text-sub); margin-bottom:12px;">내 기기 접속은 통계에서 제외됩니다.</div>
+      <div style="font-size:12px; color:var(--text-sub); margin-bottom:10px;">내 기기 접속은 통계에서 제외됩니다.</div>
+      <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px; margin-bottom:10px;">
+        <div style="font-size:11px; color:#fcd34d; font-weight:700; margin-bottom:6px;">📢 상단 한 줄 긴급 공지 (전체 사용자 노출)</div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" class="memo-input" id="adminNoticeInput" placeholder="예: 11/19 통근버스 시간표 반영 완료!" maxlength="80">
+          <button type="button" onclick="publishAdminNotice()" style="background:var(--accent);color:#0b1120;border:none;border-radius:8px;padding:0 10px;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer;">띄우기</button>
+          <button type="button" onclick="clearAdminNotice()" style="background:rgba(255,255,255,0.08);color:var(--text-sub);border:none;border-radius:8px;padding:0 8px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;">끄기</button>
+        </div>
+      </div>
       <div class="payslip-box" id="adminStatsBody">불러오는 중...</div>
       <div class="backup-row" style="margin-bottom:10px;">
         <button type="button" class="btn-backup" onclick="loadAdminStats()">🔄 새로고침</button>
@@ -1189,14 +1264,46 @@
   <div class="modal-overlay" id="feedbackModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">💬 오류·시간표 수정 제보</div>
+        <div class="modal-title">💬 오류·만족도·제보</div>
         <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeFeedbackModal()">✕</button>
       </div>
-      <div style="font-size:12px; color:var(--text-sub); line-height:1.5; margin-bottom:10px;">
-        통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 바로 전달됩니다. (익명 전송)
+      <div style="font-size:11px; color:var(--text-sub); font-weight:700; margin-bottom:6px;">앱 사용 만족도 (선택)</div>
+      <div class="rate-row" id="feedbackRateRow">
+        <button type="button" class="rate-btn" data-rate="great" onclick="selectFeedbackRate('great')"><span style="font-size:18px;">😍</span><span>최고예요</span></button>
+        <button type="button" class="rate-btn" data-rate="good" onclick="selectFeedbackRate('good')"><span style="font-size:18px;">🙂</span><span>좋아요</span></button>
+        <button type="button" class="rate-btn" data-rate="ok" onclick="selectFeedbackRate('ok')"><span style="font-size:18px;">😐</span><span>보통</span></button>
+        <button type="button" class="rate-btn" data-rate="bad" onclick="selectFeedbackRate('bad')"><span style="font-size:18px;">😕</span><span>아쉬워요</span></button>
       </div>
-      <textarea id="feedbackInput" class="memo-input" rows="4" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
-      <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">제보 보내기</button>
+      <div style="font-size:12px; color:var(--text-sub); line-height:1.5; margin-bottom:8px;">
+        통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 익명으로 전달됩니다.
+      </div>
+      <textarea id="feedbackInput" class="memo-input" rows="3" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
+      <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">보내기</button>
+    </div>
+  </div>
+
+  <!-- Patch Notes Modal -->
+  <div class="modal-overlay" id="patchNotesModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">🆕 업데이트 내역 (패치노트)</div>
+        <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closePatchNotes()">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong style="color:var(--accent);">v23 (최신)</strong><br>
+          <span style="color:var(--text-sub);">• 긴급 공지 배너 및 새 버전 업데이트 알림 추가<br>• 오류 제보함에 앱 만족도 이모지 평가 기능 추가<br>• 관리자 통계 고도화(시간대·요일·D+1 재방문율·제보 상태)</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>v21 ~ v22</strong><br>
+          <span style="color:var(--text-sub);">• 시간대별 조식·중식·석식·야식 자동 선택<br>• 웰리브 식단 표시 복구 및 설정창 iOS 스크롤 개선<br>• 특근(일·공휴일) 기준 배율(1.0 / 1.5 / 2.0) 설정 추가</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>v11 ~ v16</strong><br>
+          <span style="color:var(--text-sub);">• 통근버스·식당 즐겨찾기 상단 고정 및 공휴일·강풍 알림<br>• 3.3% / 4대보험 세금 공제 옵션 및 내 현장 수첩<br>• 10초 간단 사용법 팝업 및 익명 오류 제보함</span>
+        </div>
+      </div>
+      <button class="btn-save" onclick="closePatchNotes()">닫기</button>
     </div>
   </div>
 
@@ -2289,10 +2396,13 @@
     checkPayday();
 
     // Admin & Usage Analytics
+    const APP_BUILD = "v23";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
+    const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
     let versionTapCount = 0;
     let versionTapTimer = null;
+    let selectedFeedbackRate = "";
 
     function isAdminMode() {
       try { return localStorage.getItem("gongsu_admin_mode") === "1"; } catch (e) { return false; }
@@ -2348,19 +2458,44 @@
       }
     }
 
+    function getKstNow() {
+      return new Date(Date.now() + 9 * 3600 * 1000);
+    }
+
     function getKstDayKey(offsetDays = 0) {
       const d = new Date(Date.now() + 9 * 3600 * 1000 + offsetDays * 86400 * 1000);
       return d.toISOString().slice(0, 10).replace(/-/g, "");
+    }
+
+    function getHourSlot(hr) {
+      if (hr < 6) return "0";
+      if (hr < 9) return "1";
+      if (hr < 14) return "2";
+      if (hr < 18) return "3";
+      return "4";
     }
 
     function trackUsage() {
       if (isAdminMode()) return;
       try {
         const todayKey = getKstDayKey(0);
+        const yestKey = getKstDayKey(-1);
         const prevCountedDay = localStorage.getItem("gongsu_counted_day_v1");
         if (!localStorage.getItem("gongsu_counted_user_v1")) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_users`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_user_v1", "1");
+          }).catch(() => {});
+        }
+        if (!localStorage.getItem("gongsu_first_day_v1")) {
+          localStorage.setItem("gongsu_first_day_v1", prevCountedDay || todayKey);
+          if (!prevCountedDay) {
+            fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_new_${todayKey}`).catch(() => {});
+          }
+        }
+        const firstDay = localStorage.getItem("gongsu_first_day_v1");
+        if (firstDay === yestKey && !localStorage.getItem("gongsu_d1_ret_counted")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_d1ret_${yestKey}`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_d1_ret_counted", "1");
           }).catch(() => {});
         }
         if (prevCountedDay !== todayKey) {
@@ -2392,6 +2527,11 @@
             if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
           }).catch(() => {});
         }
+        const kst = getKstNow();
+        const hrSlot = getHourSlot(kst.getUTCHours());
+        const dow = kst.getUTCDay();
+        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_hr_${hrSlot}`).catch(() => {});
+        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_dow_${dow}`).catch(() => {});
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
       } catch (e) {}
     }
@@ -2421,6 +2561,8 @@
       closeSettings();
       const inp = document.getElementById("feedbackInput");
       if (inp) inp.value = "";
+      selectedFeedbackRate = "";
+      document.querySelectorAll("#feedbackRateRow .rate-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("feedbackModal").classList.add("open");
     }
 
@@ -2428,27 +2570,136 @@
       document.getElementById("feedbackModal").classList.remove("open");
     }
 
+    function selectFeedbackRate(rate) {
+      selectedFeedbackRate = selectedFeedbackRate === rate ? "" : rate;
+      document.querySelectorAll("#feedbackRateRow .rate-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.rate === selectedFeedbackRate);
+      });
+    }
+
     async function submitFeedback() {
       const inp = document.getElementById("feedbackInput");
       const btn = document.getElementById("feedbackSendBtn");
       const msg = (inp ? inp.value : "").trim();
-      if (!msg) { alert("내용을 입력해 주세요."); return; }
+      if (!msg && !selectedFeedbackRate) { alert("만족도나 내용을 하나 이상 선택·입력해 주세요."); return; }
       btn.disabled = true;
       btn.innerText = "보내는 중...";
       try {
-        const res = await fetch(`https://ntfy.sh/${FB_TOPIC}`, {
-          method: "POST",
-          body: msg
-        });
-        if (!res.ok) throw new Error("http " + res.status);
+        if (selectedFeedbackRate) {
+          await fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_rate_${selectedFeedbackRate}`).catch(() => {});
+        }
+        if (msg) {
+          const rateLabel = { great: "[😍최고]", good: "[🙂좋아요]", ok: "[😐보통]", bad: "[😕아쉬움]" }[selectedFeedbackRate] || "";
+          const fullMsg = rateLabel ? `${rateLabel} ${msg}` : msg;
+          const res = await fetch(`https://ntfy.sh/${FB_TOPIC}`, {
+            method: "POST",
+            body: fullMsg
+          });
+          if (!res.ok) throw new Error("http " + res.status);
+        }
         closeFeedbackModal();
-        alert("✅ 관리자에게 전달되었습니다! 감사합니다.");
+        alert("✅ 소중한 의견이 전달되었습니다! 감사합니다.");
       } catch (e) {
         alert("전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
       } finally {
         btn.disabled = false;
-        btn.innerText = "제보 보내기";
+        btn.innerText = "보내기";
       }
+    }
+
+    function openPatchNotes() {
+      closeSettings();
+      document.getElementById("patchNotesModal").classList.add("open");
+    }
+
+    function closePatchNotes() {
+      document.getElementById("patchNotesModal").classList.remove("open");
+    }
+
+    function initBuildUpdateToast() {
+      try {
+        const seen = localStorage.getItem("gongsu_seen_build");
+        if (!seen) {
+          localStorage.setItem("gongsu_seen_build", APP_BUILD);
+          return;
+        }
+        if (seen !== APP_BUILD) {
+          const el = document.getElementById("updateToastBanner");
+          const ver = document.getElementById("updateToastVer");
+          if (ver) ver.innerText = APP_BUILD;
+          if (el) el.style.display = "flex";
+        }
+      } catch (e) {}
+    }
+
+    function applyUpdateToast() {
+      localStorage.setItem("gongsu_seen_build", APP_BUILD);
+      forceRefreshApp();
+    }
+
+    function dismissUpdateToast() {
+      localStorage.setItem("gongsu_seen_build", APP_BUILD);
+      const el = document.getElementById("updateToastBanner");
+      if (el) el.style.display = "none";
+    }
+
+    async function loadRemoteNotice() {
+      try {
+        const res = await fetch(`https://ntfy.sh/${NOTICE_TOPIC}/json?poll=1`);
+        if (!res.ok) return;
+        const txt = await res.text();
+        let latest = "";
+        let latestId = "";
+        txt.split("\n").filter(Boolean).forEach(line => {
+          try {
+            const obj = JSON.parse(line);
+            if (obj.event === "message" && typeof obj.message === "string") {
+              latest = obj.message.trim();
+              latestId = obj.id || "";
+            }
+          } catch (e) {}
+        });
+        if (latest && latest !== "__CLEAR__" && localStorage.getItem("gongsu_dismissed_notice") !== latestId) {
+          const banner = document.getElementById("adminNoticeBanner");
+          const textEl = document.getElementById("adminNoticeText");
+          if (textEl) textEl.innerText = "📢 " + latest;
+          if (banner) {
+            banner.dataset.nid = latestId;
+            banner.style.display = "flex";
+          }
+        }
+      } catch (e) {}
+    }
+
+    function dismissNoticeBanner() {
+      const banner = document.getElementById("adminNoticeBanner");
+      if (banner) {
+        if (banner.dataset.nid) localStorage.setItem("gongsu_dismissed_notice", banner.dataset.nid);
+        banner.style.display = "none";
+      }
+    }
+
+    async function publishAdminNotice() {
+      const inp = document.getElementById("adminNoticeInput");
+      const msg = (inp ? inp.value : "").trim();
+      if (!msg) { alert("공지 내용을 입력해 주세요."); return; }
+      try {
+        await fetch(`https://ntfy.sh/${NOTICE_TOPIC}`, { method: "POST", body: msg });
+        localStorage.removeItem("gongsu_dismissed_notice");
+        alert("📢 상단 긴급 공지가 등록되었습니다!");
+        loadRemoteNotice();
+      } catch (e) { alert("공지 등록 중 오류가 발생했어요."); }
+    }
+
+    async function clearAdminNotice() {
+      try {
+        await fetch(`https://ntfy.sh/${NOTICE_TOPIC}`, { method: "POST", body: "__CLEAR__" });
+        const banner = document.getElementById("adminNoticeBanner");
+        if (banner) banner.style.display = "none";
+        const inp = document.getElementById("adminNoticeInput");
+        if (inp) inp.value = "";
+        alert("공지가 내려졌습니다.");
+      } catch (e) {}
     }
 
     async function fetchAdminFeedbacks() {
@@ -2475,6 +2726,30 @@
       const list = Array.from(map.values()).sort((a, b) => (b.time || 0) - (a.time || 0));
       localStorage.setItem("gongsu_admin_fb_archive", JSON.stringify(list.slice(0, 50)));
       return list;
+    }
+
+    function getFeedbackMeta() {
+      try { return JSON.parse(localStorage.getItem("gongsu_admin_fb_meta") || "{}"); } catch (e) { return {}; }
+    }
+
+    function setFeedbackStatus(id, status) {
+      const meta = getFeedbackMeta();
+      const cur = meta[id] || {};
+      cur.status = cur.status === status ? "" : status;
+      meta[id] = cur;
+      localStorage.setItem("gongsu_admin_fb_meta", JSON.stringify(meta));
+      loadAdminStats();
+    }
+
+    function editFeedbackNote(id) {
+      const meta = getFeedbackMeta();
+      const cur = meta[id] || {};
+      const next = prompt("관리자 메모를 입력하세요:", cur.note || "");
+      if (next === null) return;
+      cur.note = next.trim();
+      meta[id] = cur;
+      localStorage.setItem("gongsu_admin_fb_meta", JSON.stringify(meta));
+      loadAdminStats();
     }
 
     function deleteAdminFeedback(id) {
@@ -2532,7 +2807,15 @@
       box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
       const todayKey = getKstDayKey(0);
       const yestKey = getKstDayKey(-1);
-      const [users, activeUsers, heavy3Users, todayUsers, todayReturn, yestUsers, views, tabGongsu, tabMeal, tabBus, feedbacks] = await Promise.all([
+      const [
+        users, activeUsers, heavy3Users, todayUsers, todayReturn, yestUsers, views,
+        tabGongsu, tabMeal, tabBus,
+        yestNew, yestD1Ret,
+        hr0, hr1, hr2, hr3, hr4,
+        dow1, dow2, dow3, dow4, dow5, dow6, dow0,
+        rateGreat, rateGood, rateOk, rateBad,
+        feedbacks
+      ] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
         fetchStatValue("shierz_gongsu_prod_active"),
         fetchStatValue("shierz_gongsu_prod_heavy3"),
@@ -2543,21 +2826,81 @@
         fetchStatValue("shierz_gongsu_prod_tab_gongsu"),
         fetchStatValue("shierz_gongsu_prod_tab_meal"),
         fetchStatValue("shierz_gongsu_prod_tab_bus"),
+        fetchStatValue(`shierz_gongsu_prod_new_${yestKey}`),
+        fetchStatValue(`shierz_gongsu_prod_d1ret_${yestKey}`),
+        fetchStatValue("shierz_gongsu_prod_hr_0"),
+        fetchStatValue("shierz_gongsu_prod_hr_1"),
+        fetchStatValue("shierz_gongsu_prod_hr_2"),
+        fetchStatValue("shierz_gongsu_prod_hr_3"),
+        fetchStatValue("shierz_gongsu_prod_hr_4"),
+        fetchStatValue("shierz_gongsu_prod_dow_1"),
+        fetchStatValue("shierz_gongsu_prod_dow_2"),
+        fetchStatValue("shierz_gongsu_prod_dow_3"),
+        fetchStatValue("shierz_gongsu_prod_dow_4"),
+        fetchStatValue("shierz_gongsu_prod_dow_5"),
+        fetchStatValue("shierz_gongsu_prod_dow_6"),
+        fetchStatValue("shierz_gongsu_prod_dow_0"),
+        fetchStatValue("shierz_gongsu_prod_rate_great"),
+        fetchStatValue("shierz_gongsu_prod_rate_good"),
+        fetchStatValue("shierz_gongsu_prod_rate_ok"),
+        fetchStatValue("shierz_gongsu_prod_rate_bad"),
         fetchAdminFeedbacks()
       ]);
       const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
       const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : v;
+      const num = v => typeof v === "number" ? v : 0;
+
+      const d1Pct = num(yestNew) > 0 ? Math.round((num(yestD1Ret) / num(yestNew)) * 100) + "%" : "집계중";
+
+      const hrList = [
+        ["새벽 00~05", num(hr0)],
+        ["출근 06~08", num(hr1)],
+        ["오전 09~13", num(hr2)],
+        ["오후 14~17", num(hr3)],
+        ["퇴근 18~23", num(hr4)]
+      ];
+      const maxHr = Math.max(1, ...hrList.map(x => x[1]));
+      const hrHtml = hrList.map(([lbl, cnt]) => {
+        const pct = Math.round((cnt / maxHr) * 100);
+        return `<div class="stat-bar-row"><span style="width:68px;color:var(--text-sub);">${lbl}</span><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct}%;"></div></div><span style="width:32px;text-align:right;">${cnt}</span></div>`;
+      }).join("");
+
+      const dowList = [
+        ["월", num(dow1)], ["화", num(dow2)], ["수", num(dow3)],
+        ["목", num(dow4)], ["금", num(dow5)], ["토", num(dow6)], ["일", num(dow0)]
+      ];
+      const maxDow = Math.max(1, ...dowList.map(x => x[1]));
+      const dowHtml = `<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;margin-top:6px;">` +
+        dowList.map(([d, cnt]) => {
+          const h = Math.max(4, Math.round((cnt / maxDow) * 32));
+          return `<div><div style="height:36px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:12px;height:${h}px;background:#38bdf8;border-radius:3px;"></div></div><div style="font-size:10px;color:var(--text-sub);margin-top:2px;">${d}</div><div style="font-size:9px;color:var(--text-muted);">${cnt}</div></div>`;
+        }).join("") + `</div>`;
+
+      const fbMeta = getFeedbackMeta();
       const fbHtml = feedbacks.length
         ? feedbacks.map(f => {
             const dt = f.time ? new Date(f.time * 1000) : null;
             const tStr = dt ? `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : "";
             const safeMsg = String(f.message).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            const m = fbMeta[f.id] || {};
+            const stBadge = m.status === "done"
+              ? `<span style="background:rgba(16,185,129,0.2);color:#6ee7b7;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;">✅ 완료</span>`
+              : m.status === "hold"
+              ? `<span style="background:rgba(245,158,11,0.2);color:#fcd34d;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;">⏸️ 보류</span>`
+              : "";
+            const noteLine = m.note ? `<div style="margin-top:4px;font-size:11px;color:#38bdf8;">📝 ${String(m.note).replace(/</g,"&lt;")}</div>` : "";
             return `<div style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-                <span style="color:var(--text-muted);font-size:10px;">${tStr}</span>
-                <button type="button" onclick="deleteAdminFeedback('${f.id}')" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;">✕</button>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
+                <span style="color:var(--text-muted);font-size:10px;">${tStr} ${stBadge}</span>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button type="button" onclick="setFeedbackStatus('${f.id}','done')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="완료">✅</button>
+                  <button type="button" onclick="setFeedbackStatus('${f.id}','hold')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="보류">⏸️</button>
+                  <button type="button" onclick="editFeedbackNote('${f.id}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="메모">📝</button>
+                  <button type="button" onclick="deleteAdminFeedback('${f.id}')" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:0;">✕</button>
+                </div>
               </div>
               <div style="color:var(--text-main);line-height:1.4;">${safeMsg}</div>
+              ${noteLine}
             </div>`;
           }).join("")
         : `<div style="color:var(--text-muted);font-size:12px;padding:6px 0;">아직 들어온 제보가 없어요.</div>`;
@@ -2568,13 +2911,22 @@
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
         <div class="payslip-row"><span>🔁 오늘 재방문 (단골)</span><strong style="color:#38bdf8;">${fmt(todayReturn)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
+        <div class="payslip-row"><span>📈 어제 신규→오늘 재방문 (D+1)</span><strong style="color:#a78bfa;">${num(yestD1Ret)}/${num(yestNew)} (${d1Pct})</strong></div>
         <div class="payslip-row" style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;"><span>👀 총 앱 실행 횟수</span><strong>${fmtCnt(views)}</strong></div>
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;">🔥 기능별 사용량</div>
         <div class="payslip-row"><span>📅 공수 입력</span><strong>${fmtCnt(tabGongsu)}</strong></div>
         <div class="payslip-row"><span>🍽️ 식단·날씨 조회</span><strong>${fmtCnt(tabMeal)}</strong></div>
         <div class="payslip-row"><span>🚌 통근버스 조회</span><strong>${fmtCnt(tabBus)}</strong></div>
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">⏰ 시간대별 접속 분포</div>
+        ${hrHtml}
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📆 요일별 사용량</div>
+        ${dowHtml}
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">😊 사용자 만족도</div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;">
+          <span>😍 ${num(rateGreat)}</span><span>🙂 ${num(rateGood)}</span><span>😐 ${num(rateOk)}</span><span>😕 ${num(rateBad)}</span>
+        </div>
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:12px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📬 들어온 제보·건의 (${feedbacks.length}건)</div>
-        <div style="max-height:160px;overflow-y:auto;">${fbHtml}</div>
+        <div style="max-height:200px;overflow-y:auto;">${fbHtml}</div>
       `;
     }
 
@@ -2643,6 +2995,8 @@
     initAdminFromUrl();
     trackUsage();
     initGuide();
+    initBuildUpdateToast();
+    loadRemoteNotice();
   </script>
 </body>
 </html>
