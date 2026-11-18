@@ -2530,6 +2530,8 @@
         const kst = getKstNow();
         const hrSlot = getHourSlot(kst.getUTCHours());
         const dow = kst.getUTCDay();
+        const isPwa = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_mode_${isPwa ? "pwa" : "web"}`).catch(() => {});
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_hr_${hrSlot}`).catch(() => {});
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_dow_${dow}`).catch(() => {});
         fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
@@ -2809,6 +2811,7 @@
       const yestKey = getKstDayKey(-1);
       const [
         users, activeUsers, heavy3Users, todayUsers, todayReturn, yestUsers, views,
+        modePwa, modeWeb,
         tabGongsu, tabMeal, tabBus,
         yestNew, yestD1Ret,
         hr0, hr1, hr2, hr3, hr4,
@@ -2823,6 +2826,8 @@
         fetchStatValue(`shierz_gongsu_prod_return_${todayKey}`),
         fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
         fetchStatValue("shierz_gongsu_prod_views"),
+        fetchStatValue("shierz_gongsu_prod_mode_pwa"),
+        fetchStatValue("shierz_gongsu_prod_mode_web"),
         fetchStatValue("shierz_gongsu_prod_tab_gongsu"),
         fetchStatValue("shierz_gongsu_prod_tab_meal"),
         fetchStatValue("shierz_gongsu_prod_tab_bus"),
@@ -2851,6 +2856,8 @@
       const num = v => typeof v === "number" ? v : 0;
 
       const d1Pct = num(yestNew) > 0 ? Math.round((num(yestD1Ret) / num(yestNew)) * 100) + "%" : "집계중";
+      const modeTotal = num(modePwa) + num(modeWeb);
+      const pwaPct = modeTotal > 0 ? Math.round((num(modePwa) / modeTotal) * 100) + "%" : "0%";
 
       const hrList = [
         ["새벽 00~05", num(hr0)],
@@ -2912,6 +2919,7 @@
         <div class="payslip-row"><span>🔁 오늘 재방문 (단골)</span><strong style="color:#38bdf8;">${fmt(todayReturn)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
         <div class="payslip-row"><span>📈 어제 신규→오늘 재방문 (D+1)</span><strong style="color:#a78bfa;">${num(yestD1Ret)}/${num(yestNew)} (${d1Pct})</strong></div>
+        <div class="payslip-row"><span>📲 홈 화면(PWA) vs 🌐 웹</span><strong>${num(modePwa)}회 (${pwaPct}) / ${num(modeWeb)}회</strong></div>
         <div class="payslip-row" style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;"><span>👀 총 앱 실행 횟수</span><strong>${fmtCnt(views)}</strong></div>
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;">🔥 기능별 사용량</div>
         <div class="payslip-row"><span>📅 공수 입력</span><strong>${fmtCnt(tabGongsu)}</strong></div>
