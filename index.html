@@ -2487,8 +2487,10 @@
           }).catch(() => {});
         }
         if (!localStorage.getItem("gongsu_first_day_v1")) {
-          localStorage.setItem("gongsu_first_day_v1", prevCountedDay || todayKey);
-          if (!prevCountedDay) {
+          if (prevCountedDay) {
+            localStorage.setItem("gongsu_first_day_v1", "legacy");
+          } else {
+            localStorage.setItem("gongsu_first_day_v1", todayKey);
             fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_new_${todayKey}`).catch(() => {});
           }
         }
