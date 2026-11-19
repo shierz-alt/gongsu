@@ -1123,6 +1123,30 @@
         </div>
         <div class="menu-list" id="menuList"></div>
       </div>
+
+      <details class="quick-bar" style="padding:12px 14px;">
+        <summary style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; font-size:13.5px; font-weight:700; color:var(--text-main);">
+          <span>🧤 겨울 야드 방한템 추천</span>
+          <span style="font-size:11px; color:var(--accent); font-weight:600;">펼쳐보기 ▾</span>
+        </summary>
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:11.5px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.28); border-radius:8px; padding:7px 9px; line-height:1.4;">
+            이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+          </div>
+          <a href="https://link.coupang.com/a/iOdBbVNiHk" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+            <span style="font-size:13px; font-weight:600;">❄️ 겨울 현장 방한 추천템 #1</span>
+            <span style="font-size:11.5px; color:var(--accent); font-weight:700;">쿠팡 보기 →</span>
+          </a>
+          <a href="https://link.coupang.com/a/iOdp7jp4nc" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+            <span style="font-size:13px; font-weight:600;">🔥 곰도리 부착형 장시간 핫팩 (50개)</span>
+            <span style="font-size:11.5px; color:var(--accent); font-weight:700;">쿠팡 보기 →</span>
+          </a>
+          <a href="https://link.coupang.com/a/iOdrZM74vI" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+            <span style="font-size:13px; font-weight:600;">🧣 해피블루 겨울 넥워머 목토시 (1+1)</span>
+            <span style="font-size:11.5px; color:var(--accent); font-weight:700;">쿠팡 보기 →</span>
+          </a>
+        </div>
+      </details>
     </div>
 
     <!-- Bus View -->
@@ -2475,6 +2499,11 @@
       return "4";
     }
 
+    function trackCoupangClick() {
+      if (isAdminMode()) return;
+      fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_coupang_clicks`).catch(() => {});
+    }
+
     function trackUsage() {
       if (isAdminMode()) return;
       try {
@@ -2819,6 +2848,7 @@
         hr0, hr1, hr2, hr3, hr4,
         dow1, dow2, dow3, dow4, dow5, dow6, dow0,
         rateGreat, rateGood, rateOk, rateBad,
+        coupangClicks,
         feedbacks
       ] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
@@ -2851,6 +2881,7 @@
         fetchStatValue("shierz_gongsu_prod_rate_good"),
         fetchStatValue("shierz_gongsu_prod_rate_ok"),
         fetchStatValue("shierz_gongsu_prod_rate_bad"),
+        fetchStatValue("shierz_gongsu_prod_coupang_clicks"),
         fetchAdminFeedbacks()
       ]);
       const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
@@ -2927,6 +2958,7 @@
         <div class="payslip-row"><span>📅 공수 입력</span><strong>${fmtCnt(tabGongsu)}</strong></div>
         <div class="payslip-row"><span>🍽️ 식단·날씨 조회</span><strong>${fmtCnt(tabMeal)}</strong></div>
         <div class="payslip-row"><span>🚌 통근버스 조회</span><strong>${fmtCnt(tabBus)}</strong></div>
+        <div class="payslip-row"><span>🛒 방한템 링크 클릭</span><strong style="color:#fbbf24;">${fmtCnt(coupangClicks)}</strong></div>
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">⏰ 시간대별 접속 분포</div>
         ${hrHtml}
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📆 요일별 사용량</div>
