@@ -784,8 +784,8 @@
 
     .main-tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
       background: rgba(15, 23, 42, 0.7);
       padding: 4px;
       border-radius: 14px;
@@ -939,12 +939,36 @@
 
     <div class="toast-banner" id="toastBanner"></div>
 
+    <!-- Winter Gear Top Bar -->
+    <details style="background:rgba(15,23,42,0.72); border:1px solid var(--card-border); border-radius:12px; padding:9px 12px;">
+      <summary style="display:flex; justify-content:space-between; align-items:center; cursor:pointer; list-style:none; font-size:13px; font-weight:700; color:var(--text-main);">
+        <span>🧤 겨울 야드 방한템 추천 <span style="font-size:11px; color:var(--text-sub); font-weight:500;">(작업양말·핫팩·넥워머)</span></span>
+        <span style="font-size:11px; color:var(--accent); font-weight:700; white-space:nowrap;">열어보기 ▾</span>
+      </summary>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+        <div style="font-size:11.5px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.28); border-radius:8px; padding:7px 9px; line-height:1.45;">
+          이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+        </div>
+        <a href="https://link.coupang.com/a/iOdBbVNiHk" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; background:rgba(15,23,42,0.85); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+          <span style="font-size:13px; font-weight:600; line-height:1.35;">🧦 발등까지 두꺼운 SPORTS 통쿠션 작업 양말</span>
+          <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
+        </a>
+        <a href="https://link.coupang.com/a/iOdp7jp4nc" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; background:rgba(15,23,42,0.85); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+          <span style="font-size:13px; font-weight:600; line-height:1.35;">🔥 곰도리 부착형 장시간 핫팩 (50개)</span>
+          <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
+        </a>
+        <a href="https://link.coupang.com/a/iOdrZM74vI" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 12px; background:rgba(15,23,42,0.85); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
+          <span style="font-size:13px; font-weight:600; line-height:1.35;">🧣 해피블루 겨울 넥워머 목토시 (1+1)</span>
+          <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
+        </a>
+      </div>
+    </details>
+
     <!-- Main Tabs -->
     <div class="main-tabs">
-      <button class="main-tab-btn active" id="mainTabGongsu" onclick="switchMainTab('gongsu')" style="font-size:12px; padding:9px 4px;">📅 공수</button>
-      <button class="main-tab-btn" id="mainTabMeal" onclick="switchMainTab('meal')" style="font-size:12px; padding:9px 4px;">🍽️ 식단</button>
-      <button class="main-tab-btn" id="mainTabBus" onclick="switchMainTab('bus')" style="font-size:12px; padding:9px 4px;">🚌 버스</button>
-      <button class="main-tab-btn" id="mainTabGear" onclick="switchMainTab('gear')" style="font-size:12px; padding:9px 4px;">🧤 방한템</button>
+      <button class="main-tab-btn active" id="mainTabGongsu" onclick="switchMainTab('gongsu')">📅 공수</button>
+      <button class="main-tab-btn" id="mainTabMeal" onclick="switchMainTab('meal')">🍽️ 식단·날씨</button>
+      <button class="main-tab-btn" id="mainTabBus" onclick="switchMainTab('bus')">🚌 통근버스</button>
     </div>
 
     <div id="viewGongsu" style="display:flex; flex-direction:column; gap:16px;">
@@ -1123,33 +1147,6 @@
           <button class="sub-btn" id="btnNight" onclick="switchMeal('야식')">야식</button>
         </div>
         <div class="menu-list" id="menuList"></div>
-      </div>
-    </div>
-
-    <!-- Gear View -->
-    <div id="viewGear" style="display:none; flex-direction:column; gap:14px;">
-      <div class="quick-bar">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <span style="font-size:14px; font-weight:700;">🧤 겨울 야드 방한템 추천</span>
-          <span style="font-size:11px; color:var(--text-muted);">현장 작업용</span>
-        </div>
-        <div style="font-size:11.5px; font-weight:700; color:#fbbf24; background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.28); border-radius:8px; padding:8px 10px; line-height:1.45; margin-bottom:10px;">
-          이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <a href="https://link.coupang.com/a/iOdBbVNiHk" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
-            <span style="font-size:13px; font-weight:600; line-height:1.35;">🧦 발등까지 두꺼운 SPORTS 통쿠션 작업 양말</span>
-            <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
-          </a>
-          <a href="https://link.coupang.com/a/iOdp7jp4nc" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
-            <span style="font-size:13px; font-weight:600; line-height:1.35;">🔥 곰도리 부착형 장시간 핫팩 (50개)</span>
-            <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
-          </a>
-          <a href="https://link.coupang.com/a/iOdrZM74vI" target="_blank" rel="noopener noreferrer" onclick="trackCoupangClick()" style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:12px; background:rgba(15,23,42,0.75); border:1px solid var(--card-border); border-radius:10px; text-decoration:none; color:var(--text-main);">
-            <span style="font-size:13px; font-weight:600; line-height:1.35;">🧣 해피블루 겨울 넥워머 목토시 (1+1)</span>
-            <span style="font-size:11.5px; color:var(--accent); font-weight:700; white-space:nowrap;">쿠팡 보기 →</span>
-          </a>
-        </div>
       </div>
     </div>
 
@@ -2001,15 +1998,12 @@
       const isGongsu = tab === "gongsu";
       const isMeal = tab === "meal";
       const isBus = tab === "bus";
-      const isGear = tab === "gear";
       document.getElementById("viewGongsu").style.display = isGongsu ? "flex" : "none";
       document.getElementById("viewMeal").style.display = isMeal ? "flex" : "none";
       document.getElementById("viewBus").style.display = isBus ? "flex" : "none";
-      document.getElementById("viewGear").style.display = isGear ? "flex" : "none";
       document.getElementById("mainTabGongsu").classList.toggle("active", isGongsu);
       document.getElementById("mainTabMeal").classList.toggle("active", isMeal);
       document.getElementById("mainTabBus").classList.toggle("active", isBus);
-      document.getElementById("mainTabGear").classList.toggle("active", isGear);
       if (isMeal) {
         trackFeatureHit("meal");
         document.getElementById("dayTabs").style.display = "flex";
