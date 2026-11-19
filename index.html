@@ -2952,7 +2952,7 @@
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
         <div class="payslip-row"><span>🔁 오늘 재방문 (단골)</span><strong style="color:#38bdf8;">${fmt(todayReturn)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
-        <div class="payslip-row"><span>📈 어제 신규→오늘 재방문 (D+1)</span><strong style="color:#a78bfa;">${num(yestD1Ret)}/${num(yestNew)} (${d1Pct})</strong></div>
+        <div class="payslip-row"><span>📈 어제 신규→오늘 재방문 (D+1)</span><strong style="color:#a78bfa;">${num(yestNew)}명 중 ${num(yestD1Ret)}명 (${d1Pct})</strong></div>
         <div class="payslip-row"><span>📲 홈 화면(PWA) vs 🌐 웹</span><strong>${num(modePwa)}회 (${pwaPct}) / ${num(modeWeb)}회</strong></div>
         <div class="payslip-row" style="border-top:1px solid var(--card-border);padding-top:8px;margin-top:4px;"><span>👀 총 앱 실행 횟수</span><strong>${fmtCnt(views)}</strong></div>
         <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:10px 0 4px;">🔥 기능별 사용량</div>
