@@ -1012,38 +1012,38 @@
     <div class="quick-bar">
       <div class="quick-title">
         <span>선택: <span class="selected-date-label" id="selectedDateDisplay">11월 14일</span><span class="sat-badge" id="satBadge" style="display:none;">토요 특근 +0.5</span></span>
-        <span style="font-size: 11px; color: var(--text-muted);">탭하여 공수 입력</span>
+        <span id="quickModeHint" style="font-size: 11px; color: var(--text-muted);">탭하여 공수 입력</span>
       </div>
       <div class="preset-grid">
-        <button class="preset-btn" onclick="setGongsu(1.0)">
-          1.0
+        <button class="preset-btn" id="btn-p1" onclick="handlePresetClick(0)">
+          <span class="p-title" id="title-p1">1.0</span>
           <span class="sub" id="sub-10">정상 (15만)</span>
         </button>
-        <button class="preset-btn btn-09" onclick="setGongsu(0.9)">
-          0.9
+        <button class="preset-btn btn-09" id="btn-p2" onclick="handlePresetClick(1)">
+          <span class="p-title" id="title-p2">0.9</span>
           <span class="sub" id="sub-09">0.9공수 (13.5만)</span>
         </button>
-        <button class="preset-btn btn-15" onclick="setGongsu(1.1)">
-          1.1
+        <button class="preset-btn btn-15" id="btn-p3" onclick="handlePresetClick(2)">
+          <span class="p-title" id="title-p3">1.1</span>
           <span class="sub" id="sub-11">19시 연장 (16.5만)</span>
         </button>
-        <button class="preset-btn btn-15" onclick="setGongsu(1.3)">
-          1.3
+        <button class="preset-btn btn-15" id="btn-p4" onclick="handlePresetClick(3)">
+          <span class="p-title" id="title-p4">1.3</span>
           <span class="sub" id="sub-13">20시 연장 (19.5만)</span>
         </button>
-        <button class="preset-btn btn-15" onclick="setGongsu(1.5)">
-          1.5
+        <button class="preset-btn btn-15" id="btn-p5" onclick="handlePresetClick(4)">
+          <span class="p-title" id="title-p5">1.5</span>
           <span class="sub" id="sub-15">22시 연장 (22.5만)</span>
         </button>
-        <button class="preset-btn" onclick="setGongsu(teukRate)">
-          🔥 특근
+        <button class="preset-btn" id="btn-p6" onclick="handlePresetClick(5)">
+          <span class="p-title" id="title-p6">🔥 특근</span>
           <span class="sub" id="sub-teuk">1.0공수 (15만)</span>
         </button>
         <button class="preset-btn" onclick="promptCustomGongsu()">
           ✏️ 직접
-          <span class="sub">숫자 입력</span>
+          <span class="sub" id="sub-custom">숫자 입력</span>
         </button>
-        <button class="preset-btn" onclick="setGongsu(0)" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);">
+        <button class="preset-btn" onclick="setWorkEntry(0)" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);">
           ✕ 휴무
           <span class="sub">기록 삭제</span>
         </button>
@@ -1195,39 +1195,61 @@
   <div class="modal-overlay" id="settingsModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">⚙️ 일당 및 특근 설정</div>
+        <div class="modal-title">⚙️ 일당 및 급여 설정</div>
         <button style="background:none;border:none;color:var(--text-sub);font-size:20px;" onclick="closeSettings()">✕</button>
       </div>
 
       <div class="input-group">
-        <label class="input-label">1공수 기준 일당 (원)</label>
-        <input type="number" class="input-field" id="wageInput" value="150000" step="5000">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label">월 목표 공수 (게이지 기준)</label>
-        <input type="number" class="input-field" id="targetGongsuInput" value="22" step="0.5" min="1">
-      </div>
-
-      <div class="input-group">
-        <label class="input-label">특근 가산 공수 (기본 0.5공수)</label>
-        <input type="number" class="input-field" id="satBonusInput" value="0.5" step="0.1" min="0">
-      </div>
-
-      <label class="toggle-row">
-        <span>토요일 입력 시 특근 자동 추가</span>
-        <input type="checkbox" id="autoSatBonusInput">
-      </label>
-
-      <div class="input-group">
-        <label class="input-label">특근(일·공휴일) 기준 배율</label>
-        <select class="input-field" id="teukRateSelect" style="font-size:14px;" onchange="onTeukRateChange()">
-          <option value="1.0">1.0공수 (기본 · 특근 없음)</option>
-          <option value="1.5">1.5공수 (1.5배)</option>
-          <option value="2.0">2.0공수 (2.0배)</option>
-          <option value="custom">직접 입력</option>
+        <label class="input-label">급여 계산 방식</label>
+        <select class="input-field" id="payModeInput" style="font-size:14px;" onchange="onPayModeChange()">
+          <option value="daily">일당제 (공수 기준)</option>
+          <option value="hourly">직시급제 (일한 시간 × 고정시급)</option>
         </select>
-        <input type="number" class="input-field" id="teukRateCustom" value="1.0" step="0.1" min="0.5" style="display:none; margin-top:6px;" placeholder="예: 1.2">
+      </div>
+
+      <div id="dailySettingsGroup">
+        <div class="input-group">
+          <label class="input-label">1공수 기준 일당 (원)</label>
+          <input type="number" class="input-field" id="wageInput" value="150000" step="5000">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">월 목표 공수 (게이지 기준)</label>
+          <input type="number" class="input-field" id="targetGongsuInput" value="22" step="0.5" min="1">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">특근 가산 공수 (기본 0.5공수)</label>
+          <input type="number" class="input-field" id="satBonusInput" value="0.5" step="0.1" min="0">
+        </div>
+
+        <label class="toggle-row">
+          <span>토요일 입력 시 특근 자동 추가</span>
+          <input type="checkbox" id="autoSatBonusInput">
+        </label>
+
+        <div class="input-group">
+          <label class="input-label">특근(일·공휴일) 기준 배율</label>
+          <select class="input-field" id="teukRateSelect" style="font-size:14px;" onchange="onTeukRateChange()">
+            <option value="1.0">1.0공수 (기본 · 특근 없음)</option>
+            <option value="1.5">1.5공수 (1.5배)</option>
+            <option value="2.0">2.0공수 (2.0배)</option>
+            <option value="custom">직접 입력</option>
+          </select>
+          <input type="number" class="input-field" id="teukRateCustom" value="1.0" step="0.1" min="0.5" style="display:none; margin-top:6px;" placeholder="예: 1.2">
+        </div>
+      </div>
+
+      <div id="hourlySettingsGroup" style="display:none;">
+        <div class="input-group">
+          <label class="input-label">직시급 (시간당 원 · 수당 포함 고정시급)</label>
+          <input type="number" class="input-field" id="hourlyWageInput" value="20000" step="500">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">월 목표 근무시간 (게이지 기준)</label>
+          <input type="number" class="input-field" id="targetHoursInput" value="220" step="10" min="10">
+        </div>
       </div>
 
       <div class="input-group">
@@ -1249,14 +1271,14 @@
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
 
-      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v23)</button>
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v31)</button>
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="openFeedbackModal()">💬 오류·시간표 수정 제보</button>
 
       <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
 
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
-      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v23 · 조선소 공수 계산기</div>
+      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v31 · 조선소 공수 계산기</div>
     </div>
   </div>
 
@@ -1316,7 +1338,11 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
-          <strong style="color:var(--accent);">v23 (최신)</strong><br>
+          <strong style="color:var(--accent);">v31 (최신)</strong><br>
+          <span style="color:var(--text-sub);">• 제보 반영! 설정에서 직시급제(시간 × 고정시급) 전환 지원<br>• 겨울 야드 방한템 추천 바 및 통근버스 전체 시간표 기본 표시</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>v23 ~ v30</strong><br>
           <span style="color:var(--text-sub);">• 긴급 공지 배너 및 새 버전 업데이트 알림 추가<br>• 오류 제보함에 앱 만족도 이모지 평가 기능 추가<br>• 관리자 통계 고도화(시간대·요일·D+1 재방문율·제보 상태)</span>
         </div>
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
@@ -1370,23 +1396,36 @@
     const todayStr = getTodayStr();
     let currentDate = new Date();
     let selectedDateStr = todayStr;
+    let payMode = "daily";
     let wagePerGongsu = 150000;
     let targetGongsu = 22;
+    let hourlyWage = 20000;
+    let targetHours = 220;
     let satBonus = 0.5;
     let autoSatBonus = false;
     let teukRate = 1.0;
     let taxMode = "none";
     let gongsuData = {};
+    let hoursData = {};
     let breakfastData = {};
     let memoData = {};
 
     function loadData() {
       try {
+        const savedPayMode = localStorage.getItem("shipyard_pay_mode");
+        if (savedPayMode === "hourly" || savedPayMode === "daily") payMode = savedPayMode;
+
         const savedWage = localStorage.getItem("shipyard_wage");
         if (savedWage) wagePerGongsu = parseInt(savedWage) || 150000;
 
+        const savedHourlyWage = localStorage.getItem("shipyard_hourly_wage");
+        if (savedHourlyWage) hourlyWage = parseInt(savedHourlyWage) || 20000;
+
         const savedTarget = localStorage.getItem("shipyard_target_gongsu");
         if (savedTarget) targetGongsu = parseFloat(savedTarget) || 22;
+
+        const savedTargetHours = localStorage.getItem("shipyard_target_hours");
+        if (savedTargetHours) targetHours = parseFloat(savedTargetHours) || 220;
 
         const savedBonus = localStorage.getItem("shipyard_sat_bonus");
         if (savedBonus !== null) satBonus = parseFloat(savedBonus);
@@ -1410,6 +1449,9 @@
         const savedMemo = localStorage.getItem("shipyard_memo");
         if (savedMemo) memoData = JSON.parse(savedMemo);
 
+        const savedHours = localStorage.getItem("shipyard_hours");
+        if (savedHours) hoursData = JSON.parse(savedHours);
+
         const savedGongsu = localStorage.getItem("shipyard_gongsu");
         if (savedGongsu) {
           gongsuData = JSON.parse(savedGongsu);
@@ -1424,6 +1466,10 @@
 
     function saveGongsu() {
       localStorage.setItem("shipyard_gongsu", JSON.stringify(gongsuData));
+    }
+
+    function saveHours() {
+      localStorage.setItem("shipyard_hours", JSON.stringify(hoursData));
     }
 
     function saveBreakfast() {
@@ -1459,8 +1505,11 @@
     }
 
     function saveWage() {
+      localStorage.setItem("shipyard_pay_mode", payMode);
       localStorage.setItem("shipyard_wage", wagePerGongsu.toString());
+      localStorage.setItem("shipyard_hourly_wage", hourlyWage.toString());
       localStorage.setItem("shipyard_target_gongsu", targetGongsu.toString());
+      localStorage.setItem("shipyard_target_hours", targetHours.toString());
       localStorage.setItem("shipyard_sat_bonus", satBonus.toString());
       localStorage.setItem("shipyard_auto_sat", autoSatBonus.toString());
       localStorage.setItem("shipyard_teuk_rate", teukRate.toString());
@@ -1479,7 +1528,7 @@
     }
 
     function updateQuickLabels() {
-      const satActive = isSaturday(selectedDateStr) && autoSatBonus && satBonus > 0;
+      const satActive = payMode === "daily" && isSaturday(selectedDateStr) && autoSatBonus && satBonus > 0;
       const badge = document.getElementById("satBadge");
       if (satActive) {
         badge.style.display = "inline-block";
@@ -1488,16 +1537,40 @@
         badge.style.display = "none";
       }
 
-      const bonus = satActive ? satBonus : 0;
-      const v10 = Math.round((1.0 + bonus) * 100) / 100;
-      const v09 = Math.round((0.9 + bonus) * 100) / 100;
-
-      document.getElementById("sub-10").innerText = `정상 (${fmtMan(wagePerGongsu)})`;
-      document.getElementById("sub-09").innerText = `0.9공수 (${fmtMan(0.9 * wagePerGongsu)})`;
-      document.getElementById("sub-11").innerText = `19시 연장 (${fmtMan(1.1 * wagePerGongsu)})`;
-      document.getElementById("sub-13").innerText = `20시 연장 (${fmtMan(1.3 * wagePerGongsu)})`;
-      document.getElementById("sub-15").innerText = `22시 연장 (${fmtMan(1.5 * wagePerGongsu)})`;
-      document.getElementById("sub-teuk").innerText = `${teukRate}공수 (${fmtMan(teukRate * wagePerGongsu)})`;
+      const hintEl = document.getElementById("quickModeHint");
+      const customSub = document.getElementById("sub-custom");
+      if (payMode === "hourly") {
+        if (hintEl) hintEl.innerText = "탭하여 근무시간(h) 입력";
+        if (customSub) customSub.innerText = "시간 입력";
+        const hoursPresets = [
+          { t: "8h", h: 8, desc: "주말/기본" },
+          { t: "9h", h: 9, desc: "평일 기본" },
+          { t: "10h", h: 10, desc: "연장 1h" },
+          { t: "11h", h: 11, desc: "연장 2h" },
+          { t: "12h", h: 12, desc: "20시 연장" },
+          { t: "13h", h: 13, desc: "21시 연장" }
+        ];
+        const subIds = ["sub-10", "sub-09", "sub-11", "sub-13", "sub-15", "sub-teuk"];
+        hoursPresets.forEach((p, idx) => {
+          document.getElementById(`title-p${idx + 1}`).innerText = p.t;
+          document.getElementById(subIds[idx]).innerText = `${p.desc} (${fmtMan(p.h * hourlyWage)})`;
+        });
+      } else {
+        if (hintEl) hintEl.innerText = "탭하여 공수 입력";
+        if (customSub) customSub.innerText = "숫자 입력";
+        document.getElementById("title-p1").innerText = "1.0";
+        document.getElementById("title-p2").innerText = "0.9";
+        document.getElementById("title-p3").innerText = "1.1";
+        document.getElementById("title-p4").innerText = "1.3";
+        document.getElementById("title-p5").innerText = "1.5";
+        document.getElementById("title-p6").innerText = "🔥 특근";
+        document.getElementById("sub-10").innerText = `정상 (${fmtMan(wagePerGongsu)})`;
+        document.getElementById("sub-09").innerText = `0.9공수 (${fmtMan(0.9 * wagePerGongsu)})`;
+        document.getElementById("sub-11").innerText = `19시 연장 (${fmtMan(1.1 * wagePerGongsu)})`;
+        document.getElementById("sub-13").innerText = `20시 연장 (${fmtMan(1.3 * wagePerGongsu)})`;
+        document.getElementById("sub-15").innerText = `22시 연장 (${fmtMan(1.5 * wagePerGongsu)})`;
+        document.getElementById("sub-teuk").innerText = `${teukRate}공수 (${fmtMan(teukRate * wagePerGongsu)})`;
+      }
 
       const bBtn = document.getElementById("breakfastBtn");
       const bStat = document.getElementById("breakfastStatus");
@@ -1515,30 +1588,20 @@
       const month = currentDate.getMonth() + 1;
       const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
 
-      let total = 0;
-      let days = 0;
-      let mealCount = 0;
+      const st = calcMonthStats(year, month);
+      const total = st.total;
+      const days = st.days;
+      const mealCount = st.mealCount;
 
-      for (let dateKey in gongsuData) {
-        if (dateKey.startsWith(monthPrefix) && gongsuData[dateKey] > 0) {
-          total += gongsuData[dateKey];
-          days++;
-        }
+      if (payMode === "hourly") {
+        document.getElementById("totalGongsu").innerHTML = `${total}<span>시간</span>`;
+        document.getElementById("unitRateDisplay").innerText = `직시급 기준: ${fmtWon(hourlyWage)}/h`;
+      } else {
+        document.getElementById("totalGongsu").innerHTML = `${total}<span>공수</span>`;
+        document.getElementById("unitRateDisplay").innerText = `1공수 기준: ${fmtWon(wagePerGongsu)}`;
       }
-
-      for (let dateKey in breakfastData) {
-        if (dateKey.startsWith(monthPrefix) && breakfastData[dateKey]) {
-          mealCount++;
-        }
-      }
-
-      total = Math.round(total * 100) / 100;
-      document.getElementById("totalGongsu").innerHTML = `${total}<span>공수</span>`;
       document.getElementById("workDays").innerText = `근무일수 ${days}일`;
       document.getElementById("summaryMonthLabel").innerText = `${year}년 ${month}월 누적`;
-      document.getElementById("unitRateDisplay").innerText = `1공수 기준: ${fmtWon(wagePerGongsu)}`;
-
-      const st = calcMonthStats(year, month);
       document.getElementById("totalPay").innerText = fmtWon(st.net);
 
       const mealInfoEl = document.getElementById("mealDeductInfo");
@@ -1553,17 +1616,21 @@
       }
 
       // Goal Gauge + D-day
-      const pct = targetGongsu > 0 ? Math.round((total / targetGongsu) * 100) : 0;
+      const curTarget = payMode === "hourly" ? targetHours : targetGongsu;
+      const curUnit = payMode === "hourly" ? "시간" : "공수";
+      const pct = curTarget > 0 ? Math.round((total / curTarget) * 100) : 0;
       const clampedPct = Math.min(100, Math.max(0, pct));
-      document.getElementById("goalText").innerText = `🎯 목표 ${targetGongsu}공수 중 ${total}공수`;
+      document.getElementById("goalText").innerText = `🎯 목표 ${curTarget}${curUnit} 중 ${total}${curUnit}`;
       document.getElementById("goalPct").innerText = pct >= 100 ? `🎉 달성! ${pct}%` : `${pct}%`;
       document.getElementById("goalPct").style.color = pct >= 100 ? "var(--success)" : "var(--accent)";
       document.getElementById("goalBarFill").style.width = `${clampedPct}%`;
 
-      const remain = Math.max(0, Math.round((targetGongsu - total) * 100) / 100);
+      const remain = Math.max(0, Math.round((curTarget - total) * 100) / 100);
       document.getElementById("goalRemainText").innerText = remain > 0
-        ? `목표까지 ${remain}공수 남음 (1.0 기준 ${Math.ceil(remain)}일)`
-        : `🎉 이번 달 목표 공수 달성!`;
+        ? (payMode === "hourly"
+            ? `목표까지 ${remain}시간 남음 (9h 기준 약 ${Math.ceil(remain / 9)}일)`
+            : `목표까지 ${remain}공수 남음 (1.0 기준 ${Math.ceil(remain)}일)`)
+        : `🎉 이번 달 목표 ${curUnit} 달성!`;
 
       const now = new Date();
       const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1607,10 +1674,12 @@
 
     function calcMonthStats(year, month) {
       const prefix = `${year}-${String(month).padStart(2, '0')}-`;
+      const activeData = payMode === "hourly" ? hoursData : gongsuData;
+      const unitRate = payMode === "hourly" ? hourlyWage : wagePerGongsu;
       let total = 0;
       let days = 0;
       let mealCount = 0;
-      Object.entries(gongsuData).forEach(([k, v]) => {
+      Object.entries(activeData).forEach(([k, v]) => {
         if (k.startsWith(prefix) && v > 0) {
           total += v;
           days += 1;
@@ -1620,7 +1689,7 @@
         if (k.startsWith(prefix) && v) mealCount += 1;
       });
       total = Math.round(total * 100) / 100;
-      const gross = total * wagePerGongsu;
+      const gross = total * unitRate;
       const mealDeduct = mealCount * 500;
       const taxRate = taxMode === "3.3" ? 0.033 : (taxMode === "4ins" ? 0.094 : 0);
       const taxLabel = taxMode === "3.3" ? "3.3% 세금" : (taxMode === "4ins" ? "4대보험(~9.4%)" : "");
@@ -1647,10 +1716,15 @@
         ? `<div class="payslip-row"><span>🧾 ${s.taxLabel} 공제</span><span style="color:var(--danger);">- ${fmtWon(s.taxDeduct)}</span></div>`
         : "";
 
+      const isH = payMode === "hourly";
+      const totalLabel = isH ? `총 누적 시간 (목표 ${targetHours}시간)` : `총 누적 공수 (목표 ${targetGongsu})`;
+      const totalVal = isH ? `${s.total}시간` : `${s.total}공수`;
+      const rateFormula = isH ? `${s.total}시간 × ${fmtWon(hourlyWage)}` : `${s.total} × ${fmtWon(wagePerGongsu)}`;
+
       document.getElementById("payslipBody").innerHTML = `
         <div class="payslip-row"><span>근무 일수</span><strong>${s.days}일</strong></div>
-        <div class="payslip-row"><span>총 누적 공수 (목표 ${targetGongsu})</span><strong>${s.total}공수</strong></div>
-        <div class="payslip-row"><span>총 급여 (${s.total} × ${fmtWon(wagePerGongsu)})</span><strong>${fmtWon(s.gross)}</strong></div>
+        <div class="payslip-row"><span>${totalLabel}</span><strong>${totalVal}</strong></div>
+        <div class="payslip-row"><span>총 급여 (${rateFormula})</span><strong>${fmtWon(s.gross)}</strong></div>
         <div class="payslip-row"><span>🍚 아침식대 공제 (${s.mealCount}회)</span><span style="color:var(--danger);">- ${fmtWon(s.mealDeduct)}</span></div>
         ${taxRow}
         <div class="payslip-row total"><span>예상 실수령액</span><span>${fmtWon(s.net)}</span></div>
@@ -1764,13 +1838,19 @@
         if (dateKey === selectedDateStr) cell.classList.add("selected");
 
         let badgeHtml = "";
-        const val = gongsuData[dateKey];
+        const val = payMode === "hourly" ? hoursData[dateKey] : gongsuData[dateKey];
         if (val !== undefined && val > 0) {
           let badgeClass = "gongsu-1";
-          if (val === 0.9) badgeClass = "gongsu-09";
-          else if (val > 1.0) badgeClass = "gongsu-over";
-          else if (val < 1.0) badgeClass = "gongsu-half";
-          badgeHtml = `<div class="gongsu-badge ${badgeClass}">${val}</div>`;
+          if (payMode === "hourly") {
+            if (val < 9) badgeClass = "gongsu-09";
+            else if (val > 10) badgeClass = "gongsu-over";
+            badgeHtml = `<div class="gongsu-badge ${badgeClass}">${val}h</div>`;
+          } else {
+            if (val === 0.9) badgeClass = "gongsu-09";
+            else if (val > 1.0) badgeClass = "gongsu-over";
+            else if (val < 1.0) badgeClass = "gongsu-half";
+            badgeHtml = `<div class="gongsu-badge ${badgeClass}">${val}</div>`;
+          }
         }
 
         const mealHtml = breakfastData[dateKey] ? `<span class="meal-dot">🍚</span>` : "";
@@ -1820,38 +1900,65 @@
       setGongsu(nextVal);
     }
 
-    function setGongsu(val) {
+    function handlePresetClick(idx) {
+      if (payMode === "hourly") {
+        const hoursList = [8, 9, 10, 11, 12, 13];
+        setWorkEntry(hoursList[idx]);
+      } else {
+        const gongsuList = [1.0, 0.9, 1.1, 1.3, 1.5, teukRate];
+        setWorkEntry(gongsuList[idx]);
+      }
+    }
+
+    function setWorkEntry(val) {
       if (!selectedDateStr) return;
       trackFeatureHit("gongsu");
+      const targetMap = payMode === "hourly" ? hoursData : gongsuData;
       if (val === 0) {
-        delete gongsuData[selectedDateStr];
+        delete targetMap[selectedDateStr];
       } else {
-        gongsuData[selectedDateStr] = Math.round(val * 100) / 100;
+        targetMap[selectedDateStr] = Math.round(val * 100) / 100;
         if (!isAdminMode() && !localStorage.getItem("gongsu_active_user_v1")) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_active`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
-        if (!isAdminMode() && Object.keys(gongsuData).length >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
+        const totalEntries = Object.keys(gongsuData).length + Object.keys(hoursData).length;
+        if (!isAdminMode() && totalEntries >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
           fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_heavy3`).then(r => {
             if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
           }).catch(() => {});
         }
       }
-      saveGongsu();
+      if (payMode === "hourly") saveHours();
+      else saveGongsu();
       renderCalendar();
+    }
+
+    function setGongsu(val) {
+      setWorkEntry(val);
     }
 
     function promptCustomGongsu() {
       if (!selectedDateStr) return;
-      const currentVal = gongsuData[selectedDateStr] || "";
-      const input = prompt("입력할 공수를 적어주세요 (예: 0.8, 1.3, 1.75):", currentVal);
-      if (input !== null) {
-        const num = parseFloat(input);
-        if (!isNaN(num) && num > 0) {
-          setGongsu(num);
-        } else if (input.trim() === "0" || input.trim() === "") {
-          setGongsu(0);
+      if (payMode === "hourly") {
+        const currentVal = hoursData[selectedDateStr] || "";
+        const input = prompt("일한 시간(h)을 적어주세요 (예: 8, 9.5, 11):", currentVal);
+        if (input !== null) {
+          const num = parseFloat(input);
+          if (!isNaN(num) && num > 0) setWorkEntry(num);
+          else if (input.trim() === "0" || input.trim() === "") setWorkEntry(0);
+        }
+      } else {
+        const currentVal = gongsuData[selectedDateStr] || "";
+        const input = prompt("입력할 공수를 적어주세요 (예: 0.8, 1.3, 1.75):", currentVal);
+        if (input !== null) {
+          const num = parseFloat(input);
+          if (!isNaN(num) && num > 0) {
+            setWorkEntry(num);
+          } else if (input.trim() === "0" || input.trim() === "") {
+            setWorkEntry(0);
+          }
         }
       }
     }
@@ -1866,6 +1973,12 @@
       renderCalendar();
     }
 
+    function onPayModeChange() {
+      const m = document.getElementById("payModeInput").value;
+      document.getElementById("dailySettingsGroup").style.display = m === "hourly" ? "none" : "block";
+      document.getElementById("hourlySettingsGroup").style.display = m === "hourly" ? "block" : "none";
+    }
+
     function onTeukRateChange() {
       const sel = document.getElementById("teukRateSelect").value;
       const customEl = document.getElementById("teukRateCustom");
@@ -1873,8 +1986,12 @@
     }
 
     function openSettings() {
+      document.getElementById("payModeInput").value = payMode;
+      onPayModeChange();
       document.getElementById("wageInput").value = wagePerGongsu;
+      document.getElementById("hourlyWageInput").value = hourlyWage;
       document.getElementById("targetGongsuInput").value = targetGongsu;
+      document.getElementById("targetHoursInput").value = targetHours;
       document.getElementById("satBonusInput").value = satBonus;
       document.getElementById("autoSatBonusInput").checked = autoSatBonus;
       const sel = document.getElementById("teukRateSelect");
@@ -1896,11 +2013,17 @@
     }
 
     function saveSettings() {
+      const nextPayMode = document.getElementById("payModeInput").value;
+      payMode = (nextPayMode === "hourly" || nextPayMode === "daily") ? nextPayMode : "daily";
       const wage = parseInt(document.getElementById("wageInput").value) || 150000;
+      const hWage = parseInt(document.getElementById("hourlyWageInput").value) || 20000;
       const target = parseFloat(document.getElementById("targetGongsuInput").value);
+      const tHours = parseFloat(document.getElementById("targetHoursInput").value);
       const bonus = parseFloat(document.getElementById("satBonusInput").value);
       wagePerGongsu = wage;
+      hourlyWage = hWage;
       targetGongsu = isNaN(target) || target <= 0 ? 22 : target;
+      targetHours = isNaN(tHours) || tHours <= 0 ? 220 : tHours;
       satBonus = isNaN(bonus) || bonus < 0 ? 0.5 : bonus;
       autoSatBonus = document.getElementById("autoSatBonusInput").checked;
       const tSel = document.getElementById("teukRateSelect").value;
@@ -1918,7 +2041,7 @@
     }
 
     function exportBackup() {
-      const payload = JSON.stringify({ gongsu: gongsuData, breakfast: breakfastData, memo: memoData });
+      const payload = JSON.stringify({ gongsu: gongsuData, hours: hoursData, breakfast: breakfastData, memo: memoData });
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(payload).then(() => {
           alert("기록이 복사되었습니다! 새 링크 설정에서 '기록 붙여넣기'를 누르세요.");
@@ -1936,9 +2059,11 @@
       try {
         const parsed = JSON.parse(text.trim());
         if (parsed.gongsu) gongsuData = parsed.gongsu;
+        if (parsed.hours) hoursData = parsed.hours;
         if (parsed.breakfast) breakfastData = parsed.breakfast;
         if (parsed.memo) memoData = parsed.memo;
         saveGongsu();
+        saveHours();
         saveBreakfast();
         saveMemoStorage();
         closeSettings();
@@ -2421,7 +2546,7 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v23";
+    const APP_BUILD = "v31";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
