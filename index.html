@@ -1924,6 +1924,7 @@
             if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
           }).catch(() => {});
         }
+        trackHourlyModeUser();
       }
       if (payMode === "hourly") saveHours();
       else saveGongsu();
@@ -2026,6 +2027,7 @@
       teukRate = (!isNaN(tVal) && tVal > 0) ? Math.round(tVal * 100) / 100 : 1.0;
       taxMode = document.getElementById("taxModeInput").value || "none";
       saveWage();
+      trackHourlyModeUser();
       closeSettings();
       updateQuickLabels();
       renderCalendar();
@@ -2702,6 +2704,17 @@
       }
     }
 
+    function trackHourlyModeUser() {
+      if (payMode !== "hourly" || isAdminMode()) return;
+      try {
+        if (!localStorage.getItem("gongsu_hourly_user_v1")) {
+          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_pay_hourly`).then(r => {
+            if (r.ok) localStorage.setItem("gongsu_hourly_user_v1", "1");
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+
     function trackFeatureHit(name) {
       if (isAdminMode()) return;
       try {
@@ -3012,7 +3025,7 @@
         hr0, hr1, hr2, hr3, hr4,
         dow1, dow2, dow3, dow4, dow5, dow6, dow0,
         rateGreat, rateGood, rateOk, rateBad,
-        coupangClicks,
+        coupangClicks, hourlyUsers,
         feedbacks
       ] = await Promise.all([
         fetchStatValue("shierz_gongsu_prod_users"),
@@ -3046,6 +3059,7 @@
         fetchStatValue("shierz_gongsu_prod_rate_ok"),
         fetchStatValue("shierz_gongsu_prod_rate_bad"),
         fetchStatValue("shierz_gongsu_prod_coupang_clicks"),
+        fetchStatValue("shierz_gongsu_prod_pay_hourly"),
         fetchAdminFeedbacks()
       ]);
       const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
@@ -3117,6 +3131,7 @@
         <div class="payslip-row"><span>👥 누적 사용자 (기기 기준)</span><strong style="color:var(--accent);">${fmt(users)}</strong></div>
         <div class="payslip-row"><span>✍️ 공수 입력 실사용자 (1일+)</span><strong style="color:#f59e0b;">${fmt(activeUsers)}</strong></div>
         <div class="payslip-row"><span>🔥 꾸준히 입력 찐단골 (3일+)</span><strong style="color:#fb7185;">${fmt(heavy3Users)}</strong></div>
+        <div class="payslip-row"><span>⏱️ 직시급제 사용자 (기기 기준)</span><strong style="color:#34d399;">${fmt(hourlyUsers)}</strong></div>
         <div class="payslip-row"><span>📅 오늘 사용자</span><strong style="color:var(--success);">${fmt(todayUsers)}</strong></div>
         <div class="payslip-row"><span>🔁 오늘 재방문 (단골)</span><strong style="color:#38bdf8;">${fmt(todayReturn)}</strong></div>
         <div class="payslip-row"><span>🗓️ 어제 사용자</span><strong>${fmt(yestUsers)}</strong></div>
