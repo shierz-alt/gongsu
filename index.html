@@ -1660,7 +1660,7 @@
           return `
             <div class="cmp-row">
               <div class="cmp-head">
-                <span>${m.label} (${m.gongsu}공수)</span>
+                <span>${m.label} (${m.gongsu}${payMode === "hourly" ? "시간" : "공수"})</span>
                 <strong style="color:var(--text-main);">${fmtWon(m.net)}</strong>
               </div>
               <div class="cmp-bar-bg">
