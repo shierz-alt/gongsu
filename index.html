@@ -1271,14 +1271,14 @@
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
 
-      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v31)</button>
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v32)</button>
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="openFeedbackModal()">💬 오류·시간표 수정 제보</button>
 
       <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
 
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
-      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v31 · 조선소 공수 계산기</div>
+      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v32 · 조선소 공수 계산기</div>
     </div>
   </div>
 
@@ -1322,8 +1322,9 @@
         <button type="button" class="rate-btn" data-rate="bad" onclick="selectFeedbackRate('bad')"><span style="font-size:18px;">😕</span><span>아쉬워요</span></button>
       </div>
       <div style="font-size:12px; color:var(--text-sub); line-height:1.5; margin-bottom:8px;">
-        통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 익명으로 전달됩니다.
+        통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 전달됩니다.
       </div>
+      <input type="text" id="feedbackNickInput" class="memo-input" maxlength="16" placeholder="(선택) 답장 받을 닉네임 (적으면 내 화면에만 답장이 떠요)" style="width:100%; margin-bottom:8px; font-size:12px;">
       <textarea id="feedbackInput" class="memo-input" rows="3" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
       <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">보내기</button>
     </div>
@@ -1338,8 +1339,8 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
-          <strong style="color:var(--accent);">v31 (최신)</strong><br>
-          <span style="color:var(--text-sub);">• 제보 반영! 설정에서 직시급제(시간 × 고정시급) 전환 지원<br>• 겨울 야드 방한템 추천 바 및 통근버스 전체 시간표 기본 표시</span>
+          <strong style="color:var(--accent);">v32 (최신)</strong><br>
+          <span style="color:var(--text-sub);">• 제보창에 선택 닉네임 추가 (입력 시 본인 화면에만 답장 배너 표시)<br>• 직시급제(일한 시간 × 고정시급) 계산 모드 추가</span>
         </div>
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
           <strong>v23 ~ v30</strong><br>
@@ -2546,7 +2547,7 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v31";
+    const APP_BUILD = "v32";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
@@ -2720,6 +2721,8 @@
       closeSettings();
       const inp = document.getElementById("feedbackInput");
       if (inp) inp.value = "";
+      const nickInp = document.getElementById("feedbackNickInput");
+      if (nickInp) nickInp.value = localStorage.getItem("gongsu_fb_nick") || "";
       selectedFeedbackRate = "";
       document.querySelectorAll("#feedbackRateRow .rate-btn").forEach(b => b.classList.remove("active"));
       document.getElementById("feedbackModal").classList.add("open");
@@ -2738,18 +2741,22 @@
 
     async function submitFeedback() {
       const inp = document.getElementById("feedbackInput");
+      const nickInp = document.getElementById("feedbackNickInput");
       const btn = document.getElementById("feedbackSendBtn");
       const msg = (inp ? inp.value : "").trim();
+      const nick = (nickInp ? nickInp.value : "").trim();
       if (!msg && !selectedFeedbackRate) { alert("만족도나 내용을 하나 이상 선택·입력해 주세요."); return; }
       btn.disabled = true;
       btn.innerText = "보내는 중...";
       try {
+        if (nick) localStorage.setItem("gongsu_fb_nick", nick);
         if (selectedFeedbackRate) {
           await fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_rate_${selectedFeedbackRate}`).catch(() => {});
         }
         if (msg) {
           const rateLabel = { great: "[😍최고]", good: "[🙂좋아요]", ok: "[😐보통]", bad: "[😕아쉬움]" }[selectedFeedbackRate] || "";
-          const fullMsg = rateLabel ? `${rateLabel} ${msg}` : msg;
+          const nickTag = nick ? `[닉:${nick}]` : "";
+          const fullMsg = [rateLabel, nickTag, msg].filter(Boolean).join(" ");
           const res = await fetch(`https://ntfy.sh/${FB_TOPIC}`, {
             method: "POST",
             body: fullMsg
@@ -2757,7 +2764,7 @@
           if (!res.ok) throw new Error("http " + res.status);
         }
         closeFeedbackModal();
-        alert("✅ 소중한 의견이 전달되었습니다! 감사합니다.");
+        alert(nick ? `✅ 전달되었습니다! 답장은 '${nick}' 님 화면 상단에 뜹니다.` : "✅ 소중한 의견이 전달되었습니다! 감사합니다.");
       } catch (e) {
         alert("전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
       } finally {
@@ -2807,27 +2814,64 @@
         const res = await fetch(`https://ntfy.sh/${NOTICE_TOPIC}/json?poll=1`);
         if (!res.ok) return;
         const txt = await res.text();
-        let latest = "";
-        let latestId = "";
+        const myNick = (localStorage.getItem("gongsu_fb_nick") || "").trim();
+        let latestGlobal = "";
+        let latestGlobalId = "";
+        let latestPersonal = "";
+        let latestPersonalId = "";
         txt.split("\n").filter(Boolean).forEach(line => {
           try {
             const obj = JSON.parse(line);
             if (obj.event === "message" && typeof obj.message === "string") {
-              latest = obj.message.trim();
-              latestId = obj.id || "";
+              const raw = obj.message.trim();
+              if (raw.startsWith("@reply:")) {
+                try {
+                  const payload = JSON.parse(raw.slice(7));
+                  if (myNick && payload.target === myNick && payload.msg) {
+                    latestPersonal = payload.msg;
+                    latestPersonalId = obj.id || "";
+                  }
+                } catch (e) {}
+              } else {
+                latestGlobal = raw;
+                latestGlobalId = obj.id || "";
+              }
             }
           } catch (e) {}
         });
-        if (latest && latest !== "__CLEAR__" && localStorage.getItem("gongsu_dismissed_notice") !== latestId) {
+        const showPersonal = latestPersonal && localStorage.getItem("gongsu_dismissed_notice") !== latestPersonalId;
+        const showGlobal = !showPersonal && latestGlobal && latestGlobal !== "__CLEAR__" && localStorage.getItem("gongsu_dismissed_notice") !== latestGlobalId;
+        if (showPersonal) {
           const banner = document.getElementById("adminNoticeBanner");
           const textEl = document.getElementById("adminNoticeText");
-          if (textEl) textEl.innerText = "📢 " + latest;
+          if (textEl) textEl.innerText = `💌 [${myNick} 님께 답장] ${latestPersonal}`;
           if (banner) {
-            banner.dataset.nid = latestId;
+            banner.dataset.nid = latestPersonalId;
+            banner.style.display = "flex";
+          }
+        } else if (showGlobal) {
+          const banner = document.getElementById("adminNoticeBanner");
+          const textEl = document.getElementById("adminNoticeText");
+          if (textEl) textEl.innerText = "📢 " + latestGlobal;
+          if (banner) {
+            banner.dataset.nid = latestGlobalId;
             banner.style.display = "flex";
           }
         }
       } catch (e) {}
+    }
+
+    async function replyToFeedbackNick(nick) {
+      const msg = prompt(`'${nick}' 님 화면에만 띄울 답장 내용을 입력하세요:`);
+      if (!msg || !msg.trim()) return;
+      try {
+        const body = "@reply:" + JSON.stringify({ target: nick, msg: msg.trim() });
+        const res = await fetch(`https://ntfy.sh/${NOTICE_TOPIC}`, { method: "POST", body });
+        if (!res.ok) throw new Error("http " + res.status);
+        alert(`💌 '${nick}' 님께 개별 답장 배너를 보냈습니다!`);
+      } catch (e) {
+        alert("답장 전송 중 오류가 발생했어요.");
+      }
     }
 
     function dismissNoticeBanner() {
@@ -3055,10 +3099,15 @@
               ? `<span style="background:rgba(245,158,11,0.2);color:#fcd34d;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;">⏸️ 보류</span>`
               : "";
             const noteLine = m.note ? `<div style="margin-top:4px;font-size:11px;color:#38bdf8;">📝 ${String(m.note).replace(/</g,"&lt;")}</div>` : "";
+            const nickMatch = (f.message || "").match(/\[닉:([^\]]+)\]/);
+            const replyBtn = nickMatch
+              ? `<button type="button" onclick="replyToFeedbackNick('${nickMatch[1].replace(/'/g,"\\'")}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="이 닉네임에게 답장">💌</button>`
+              : "";
             return `<div style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
                 <span style="color:var(--text-muted);font-size:10px;">${tStr} ${stBadge}</span>
                 <div style="display:flex;gap:6px;align-items:center;">
+                  ${replyBtn}
                   <button type="button" onclick="setFeedbackStatus('${f.id}','done')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="완료">✅</button>
                   <button type="button" onclick="setFeedbackStatus('${f.id}','hold')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="보류">⏸️</button>
                   <button type="button" onclick="editFeedbackNote('${f.id}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="메모">📝</button>
