@@ -2558,7 +2558,7 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v38";
+    const APP_BUILD = "v39";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
@@ -3355,7 +3355,7 @@
       const btnEl = document.getElementById("pwaModalActionBtn");
       if (!el || !titleEl || !bodyEl || !btnEl) return;
 
-      if (isRunningStandalone() || isAdminMode()) {
+      if (isRunningStandalone()) {
         el.classList.remove("open");
         return;
       }
