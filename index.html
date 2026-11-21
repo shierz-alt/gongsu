@@ -1174,15 +1174,16 @@
     </div>
   </div>
 
-  <!-- Floating PWA Install / In-app Escape Banner (only shown in browser mode) -->
-  <div id="pwaInstallBanner" style="display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom, 0px) + 12px); width:calc(100% - 24px); max-width:416px; background:rgba(15, 23, 42, 0.96); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(56, 189, 248, 0.45); border-radius:14px; padding:11px 12px; box-shadow:0 10px 28px rgba(0,0,0,0.55); z-index:50; align-items:center; justify-content:space-between; gap:10px;">
-    <div style="flex:1; min-width:0;">
-      <div id="pwaBannerTitle" style="font-size:12.5px; font-weight:800; color:#f8fafc; line-height:1.3;">📲 바탕화면에 앱으로 추가하기</div>
-      <div id="pwaBannerDesc" style="font-size:11px; color:#94a3b8; line-height:1.35; margin-top:2px;">홈 화면에 넣으면 기록이 안전하게 유지돼요</div>
-    </div>
-    <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-      <button id="pwaBannerActionBtn" onclick="handlePwaBannerAction()" style="display:none; background:linear-gradient(135deg, #38bdf8, #3b82f6); color:#0b1120; border:none; border-radius:9px; padding:7px 11px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">📲 앱 설치</button>
-      <button onclick="dismissPwaBanner()" aria-label="닫기" style="background:rgba(148,163,184,0.16); color:#94a3b8; border:none; border-radius:8px; width:26px; height:26px; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center;">✕</button>
+  <!-- PWA Install / In-app Escape Modal (shown every visit when not standalone) -->
+  <div class="modal-overlay" id="pwaInstallModal">
+    <div class="modal-content" style="max-width:360px; text-align:center;">
+      <div class="modal-header" style="justify-content:center; position:relative; margin-bottom:10px;">
+        <div class="modal-title" id="pwaModalTitle" style="font-size:16px;">📲 바탕화면에 앱으로 추가하기</div>
+        <button onclick="closePwaModal()" aria-label="닫기" style="position:absolute; right:0; top:0; background:none; border:none; color:var(--text-sub); font-size:20px; cursor:pointer;">✕</button>
+      </div>
+      <div id="pwaModalBody" style="font-size:13px; color:var(--text-sub); line-height:1.6; background:rgba(15,23,42,0.65); border:1px solid var(--card-border); border-radius:12px; padding:14px 12px; margin-bottom:14px; text-align:left;"></div>
+      <button id="pwaModalActionBtn" onclick="handlePwaModalAction()" class="btn-save" style="display:none; margin-bottom:8px;">📲 바탕화면에 앱 설치하기</button>
+      <button onclick="closePwaModal()" style="width:100%; background:rgba(148,163,184,0.12); color:var(--text-sub); border:1px solid var(--card-border); border-radius:12px; padding:11px; font-size:13px; font-weight:600; cursor:pointer;">웹으로 그냥 볼게요</button>
     </div>
   </div>
 
@@ -2557,7 +2558,7 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v37";
+    const APP_BUILD = "v38";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
@@ -3342,83 +3343,72 @@
       return { isIOS, isAndroid, isInApp };
     }
 
-    function dismissPwaBanner() {
-      const el = document.getElementById("pwaInstallBanner");
-      if (el) el.style.display = "none";
-      try {
-        localStorage.setItem("gongsu_pwa_banner_dismissed_v1", String(Date.now()));
-      } catch (e) {}
+    function closePwaModal() {
+      const el = document.getElementById("pwaInstallModal");
+      if (el) el.classList.remove("open");
     }
 
-    function renderPwaBannerContent() {
-      const el = document.getElementById("pwaInstallBanner");
-      const titleEl = document.getElementById("pwaBannerTitle");
-      const descEl = document.getElementById("pwaBannerDesc");
-      const btnEl = document.getElementById("pwaBannerActionBtn");
-      if (!el || !titleEl || !descEl || !btnEl) return;
+    function openPwaModal() {
+      const el = document.getElementById("pwaInstallModal");
+      const titleEl = document.getElementById("pwaModalTitle");
+      const bodyEl = document.getElementById("pwaModalBody");
+      const btnEl = document.getElementById("pwaModalActionBtn");
+      if (!el || !titleEl || !bodyEl || !btnEl) return;
 
       if (isRunningStandalone() || isAdminMode()) {
-        el.style.display = "none";
+        el.classList.remove("open");
         return;
       }
-
-      try {
-        const dismissedAt = Number(localStorage.getItem("gongsu_pwa_banner_dismissed_v1") || 0);
-        if (dismissedAt && (Date.now() - dismissedAt) < 7 * 24 * 60 * 60 * 1000) {
-          el.style.display = "none";
-          return;
-        }
-      } catch (e) {}
 
       const { isIOS, isAndroid, isInApp } = detectPwaEnv();
 
       if (isInApp) {
         if (isAndroid) {
-          titleEl.textContent = "⚠️ 카톡/네이버 앱에선 기록이 날아갈 수 있어요";
-          descEl.textContent = "기본 브라우저로 열어 바탕화면에 1초 만에 추가하세요!";
-          btnEl.textContent = "🌐 브라우저로 열기";
-          btnEl.style.display = "inline-block";
-          el.style.display = "flex";
+          titleEl.textContent = "📲 바탕화면에 앱으로 추가하기";
+          bodyEl.innerHTML = `<div style="color:#fbbf24; font-weight:700; margin-bottom:6px;">⚠️ 카톡·네이버 앱에선 공수 기록이 날아갈 수 있어요!</div>아래 버튼을 눌러 기본 브라우저(삼성인터넷·크롬)로 열면 <b>바탕화면에 1초 만에 설치</b>할 수 있습니다.`;
+          btnEl.textContent = "🌐 기본 브라우저로 열기";
+          btnEl.style.display = "block";
+          el.classList.add("open");
           return;
         }
         if (isIOS) {
-          titleEl.textContent = "⚠️ 카톡/네이버 앱에선 기록이 날아갈 수 있어요";
-          descEl.textContent = "우측 하단 ··· → [Safari로 열기] 후 홈 화면에 추가!";
+          titleEl.textContent = "📲 아이폰 홈 화면에 추가하기";
+          bodyEl.innerHTML = `<div style="color:#fbbf24; font-weight:700; margin-bottom:6px;">⚠️ 카톡·네이버 앱에선 공수 기록이 날아갈 수 있어요!</div>1️⃣ 우측 하단 <b>···</b> 버튼 누르기<br>2️⃣ <b>[Safari로 열기]</b> 누르기<br>3️⃣ 사파리에서 <b>공유(□↑) → [홈 화면에 추가]</b>`;
           btnEl.style.display = "none";
-          el.style.display = "flex";
+          el.classList.add("open");
           return;
         }
       }
 
       if (deferredInstallPrompt) {
-        titleEl.textContent = "📲 바탕화면에 앱으로 바로 설치";
-        descEl.textContent = "버튼 한 번만 누르면 홈 화면에 바로 추가돼요";
-        btnEl.textContent = "📲 앱 설치하기";
-        btnEl.style.display = "inline-block";
-        el.style.display = "flex";
+        titleEl.textContent = "📲 바탕화면에 앱으로 설치";
+        bodyEl.innerHTML = `웹으로 들어오면 매번 링크를 찾아야 하고 기록이 지워질 수 있어요.<br><br>아래 버튼 한 번만 누르면 <b>바탕화면에 앱 아이콘이 바로 추가</b>됩니다!`;
+        btnEl.textContent = "📲 바탕화면에 앱 설치하기";
+        btnEl.style.display = "block";
+        el.classList.add("open");
         return;
       }
 
       if (isIOS) {
-        titleEl.textContent = "📲 홈 화면에 추가해 두고 1초 만에 켜세요";
-        descEl.textContent = "아래 공유(□↑) 또는 ··· 메뉴 → [홈 화면에 추가]";
+        titleEl.textContent = "📲 아이폰 홈 화면에 추가하기";
+        bodyEl.innerHTML = `바탕화면에 추가해 두면 공수 기록도 안전하고 1초 만에 켜져요!<br><br>1️⃣ 사파리 아래 <b>공유(□↑)</b> 또는 <b>···</b> 버튼 터치<br>2️⃣ 아래로 내려 <b>[홈 화면에 추가]</b> 선택<br>3️⃣ 오른쪽 위 <b>[추가]</b> 누르면 완료!`;
         btnEl.style.display = "none";
-        el.style.display = "flex";
+        el.classList.add("open");
         return;
       }
 
       if (isAndroid) {
-        titleEl.textContent = "📲 바탕화면에 앱으로 추가하기";
-        descEl.textContent = "브라우저 메뉴(⋮/≡) → [홈 화면에 추가]로 바로 실행!";
+        titleEl.textContent = "📲 갤럭시 바탕화면에 추가하기";
+        bodyEl.innerHTML = `바탕화면에 추가해 두면 공수 기록도 안전하고 1초 만에 켜져요!<br><br>1️⃣ 브라우저 메뉴(<b>⋮</b> 또는 <b>≡</b>) 터치<br>2️⃣ <b>[현재 페이지 추가] → [홈 화면]</b> 또는 <b>[홈 화면에 추가]</b> 선택`;
         btnEl.style.display = "none";
-        el.style.display = "flex";
+        el.classList.add("open");
         return;
       }
 
-      el.style.display = "none";
+      el.classList.remove("open");
     }
 
-    async function handlePwaBannerAction() {
+    async function handlePwaModalAction() {
       const { isAndroid, isInApp } = detectPwaEnv();
       if (isInApp && isAndroid) {
         const cleanUrl = (location.host + location.pathname + location.search);
@@ -3431,8 +3421,7 @@
           const choice = await deferredInstallPrompt.userChoice;
           if (choice && choice.outcome === "accepted") {
             deferredInstallPrompt = null;
-            const el = document.getElementById("pwaInstallBanner");
-            if (el) el.style.display = "none";
+            closePwaModal();
           }
         } catch (e) {}
       }
@@ -3445,14 +3434,13 @@
       window.addEventListener("beforeinstallprompt", (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
-        renderPwaBannerContent();
+        openPwaModal();
       });
       window.addEventListener("appinstalled", () => {
         deferredInstallPrompt = null;
-        const el = document.getElementById("pwaInstallBanner");
-        if (el) el.style.display = "none";
+        closePwaModal();
       });
-      setTimeout(renderPwaBannerContent, 600);
+      setTimeout(openPwaModal, 650);
     }
 
     renderGearGrid();
