@@ -1,0 +1,25 @@
+{
+  "name": "한화오션 공수·식단·버스",
+  "short_name": "공수계산기",
+  "description": "한화오션 공수 달력, 일당·직시급 급여, 식단표, 야드 날씨, 통근버스 시간표",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
