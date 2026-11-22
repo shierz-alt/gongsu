@@ -2716,15 +2716,43 @@
       } catch (e) {}
     }
 
+    let _statInFlight = 0;
+    const _statQueue = [];
+    function _acquireStatSlot() {
+      if (_statInFlight < 6) {
+        _statInFlight++;
+        return Promise.resolve();
+      }
+      return new Promise(resolve => _statQueue.push(resolve));
+    }
+    function _releaseStatSlot() {
+      _statInFlight--;
+      if (_statQueue.length > 0 && _statInFlight < 6) {
+        _statInFlight++;
+        const next = _statQueue.shift();
+        next();
+      }
+    }
+
     async function fetchStatValue(key) {
+      await _acquireStatSlot();
       try {
-        const res = await fetch(`${STATS_BASE}/get/${key}`);
-        if (res.status === 404) return 0;
-        if (!res.ok) return "-";
-        const data = await res.json();
-        return Number(data.value ?? 0);
-      } catch (e) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const res = await fetch(`${STATS_BASE}/get/${key}`);
+            if (res.status === 404) return 0;
+            if (res.ok) {
+              const data = await res.json();
+              return Number(data.value ?? 0);
+            }
+          } catch (e) {}
+          if (attempt < 2) {
+            await new Promise(r => setTimeout(r, 150 + Math.random() * 150));
+          }
+        }
         return "-";
+      } finally {
+        _releaseStatSlot();
       }
     }
 
