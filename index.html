@@ -2718,7 +2718,7 @@
 
     let _statInFlight = 0;
     const _statQueue = [];
-    const STAT_CONCURRENCY = 10;
+    const STAT_CONCURRENCY = 4;
     function _acquireStatSlot() {
       if (_statInFlight < STAT_CONCURRENCY) {
         _statInFlight++;
@@ -2735,7 +2735,7 @@
       }
     }
 
-    async function fetchWithTimeout(url, ms = 2500) {
+    async function fetchWithTimeout(url, ms = 3500) {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), ms);
       try {
@@ -2745,12 +2745,12 @@
       }
     }
 
-    async function fetchStatValue(key) {
+    async function fetchStatValue(key, fallback) {
       await _acquireStatSlot();
       try {
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
-            const res = await fetchWithTimeout(`${STATS_BASE}/get/${key}`, 2500);
+            const res = await fetchWithTimeout(`${STATS_BASE}/get/${key}`, 3500);
             if (res.status === 404) return 0;
             if (res.ok) {
               const data = await res.json();
@@ -2758,10 +2758,10 @@
             }
           } catch (e) {}
           if (attempt === 0) {
-            await new Promise(r => setTimeout(r, 100));
+            await new Promise(r => setTimeout(r, 200));
           }
         }
-        return "-";
+        return fallback !== undefined ? fallback : "-";
       } finally {
         _releaseStatSlot();
       }
@@ -3075,58 +3075,18 @@
 
     loadNotebook();
 
-    async function loadAdminStats() {
+    let _statsRunId = 0;
+
+    function renderAdminStats(s, statusBadge) {
       const box = document.getElementById("adminStatsBody");
-      box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">통계 불러오는 중...</div>';
-      const todayKey = getKstDayKey(0);
-      const yestKey = getKstDayKey(-1);
-      const [
+      const {
         users, activeUsers, heavy3Users, todayUsers, todayReturn, yestUsers, views,
-        modePwa, modeWeb,
-        tabGongsu, tabMeal, tabBus,
-        yestNew, yestD1Ret,
-        hr0, hr1, hr2, hr3, hr4,
-        dow1, dow2, dow3, dow4, dow5, dow6, dow0,
-        rateGreat, rateGood, rateOk, rateBad,
-        coupangClicks, hourlyUsers,
-        feedbacks
-      ] = await Promise.all([
-        fetchStatValue("shierz_gongsu_prod_users"),
-        fetchStatValue("shierz_gongsu_prod_active"),
-        fetchStatValue("shierz_gongsu_prod_heavy3"),
-        fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`),
-        fetchStatValue(`shierz_gongsu_prod_return_${todayKey}`),
-        fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`),
-        fetchStatValue("shierz_gongsu_prod_views"),
-        fetchStatValue("shierz_gongsu_prod_mode_pwa"),
-        fetchStatValue("shierz_gongsu_prod_mode_web"),
-        fetchStatValue("shierz_gongsu_prod_tab_gongsu"),
-        fetchStatValue("shierz_gongsu_prod_tab_meal"),
-        fetchStatValue("shierz_gongsu_prod_tab_bus"),
-        fetchStatValue(`shierz_gongsu_prod_new_${yestKey}`),
-        fetchStatValue(`shierz_gongsu_prod_d1ret_${yestKey}`),
-        fetchStatValue("shierz_gongsu_prod_hr_0"),
-        fetchStatValue("shierz_gongsu_prod_hr_1"),
-        fetchStatValue("shierz_gongsu_prod_hr_2"),
-        fetchStatValue("shierz_gongsu_prod_hr_3"),
-        fetchStatValue("shierz_gongsu_prod_hr_4"),
-        fetchStatValue("shierz_gongsu_prod_dow_1"),
-        fetchStatValue("shierz_gongsu_prod_dow_2"),
-        fetchStatValue("shierz_gongsu_prod_dow_3"),
-        fetchStatValue("shierz_gongsu_prod_dow_4"),
-        fetchStatValue("shierz_gongsu_prod_dow_5"),
-        fetchStatValue("shierz_gongsu_prod_dow_6"),
-        fetchStatValue("shierz_gongsu_prod_dow_0"),
-        fetchStatValue("shierz_gongsu_prod_rate_great"),
-        fetchStatValue("shierz_gongsu_prod_rate_good"),
-        fetchStatValue("shierz_gongsu_prod_rate_ok"),
-        fetchStatValue("shierz_gongsu_prod_rate_bad"),
-        fetchStatValue("shierz_gongsu_prod_coupang_clicks"),
-        fetchStatValue("shierz_gongsu_prod_pay_hourly"),
-        fetchAdminFeedbacks()
-      ]);
-      const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : v;
-      const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : v;
+        modePwa, modeWeb, tabGongsu, tabMeal, tabBus, yestNew, yestD1Ret,
+        hr0, hr1, hr2, hr3, hr4, dow1, dow2, dow3, dow4, dow5, dow6, dow0,
+        rateGreat, rateGood, rateOk, rateBad, coupangClicks, hourlyUsers, feedbacks
+      } = s;
+      const fmt = v => typeof v === "number" ? v.toLocaleString() + "명" : (v ?? "-");
+      const fmtCnt = v => typeof v === "number" ? v.toLocaleString() + "회" : (v ?? "-");
       const num = v => typeof v === "number" ? v : 0;
 
       const d1Pct = num(yestNew) > 0 ? Math.round((num(yestD1Ret) / num(yestNew)) * 100) + "%" : "집계중";
@@ -3157,9 +3117,10 @@
           return `<div><div style="height:36px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:12px;height:${h}px;background:#38bdf8;border-radius:3px;"></div></div><div style="font-size:10px;color:var(--text-sub);margin-top:2px;">${d}</div><div style="font-size:9px;color:var(--text-muted);">${cnt}</div></div>`;
         }).join("") + `</div>`;
 
+      const fbList = Array.isArray(feedbacks) ? feedbacks : [];
       const fbMeta = getFeedbackMeta();
-      const fbHtml = feedbacks.length
-        ? feedbacks.map(f => {
+      const fbHtml = fbList.length
+        ? fbList.map(f => {
             const dt = f.time ? new Date(f.time * 1000) : null;
             const tStr = dt ? `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : "";
             const safeMsg = String(f.message).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
@@ -3190,7 +3151,10 @@
             </div>`;
           }).join("")
         : `<div style="color:var(--text-muted);font-size:12px;padding:6px 0;">아직 들어온 제보가 없어요.</div>`;
-      box.innerHTML = `
+      const statusHtml = statusBadge
+        ? `<div style="font-size:11px;color:#38bdf8;text-align:right;margin-bottom:4px;">${statusBadge}</div>`
+        : "";
+      box.innerHTML = statusHtml + `
         <div class="payslip-row"><span>👥 누적 사용자 (기기 기준)</span><strong style="color:var(--accent);">${fmt(users)}</strong></div>
         <div class="payslip-row"><span>✍️ 공수 입력 실사용자 (1일+)</span><strong style="color:#f59e0b;">${fmt(activeUsers)}</strong></div>
         <div class="payslip-row"><span>🔥 꾸준히 입력 찐단골 (3일+)</span><strong style="color:#fb7185;">${fmt(heavy3Users)}</strong></div>
@@ -3214,9 +3178,91 @@
         <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;">
           <span>😍 ${num(rateGreat)}</span><span>🙂 ${num(rateGood)}</span><span>😐 ${num(rateOk)}</span><span>😕 ${num(rateBad)}</span>
         </div>
-        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:12px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📬 들어온 제보·건의 (${feedbacks.length}건)</div>
+        <div style="font-size:11px;color:var(--text-sub);font-weight:700;margin:12px 0 4px;border-top:1px solid var(--card-border);padding-top:8px;">📬 들어온 제보·건의 (${fbList.length}건)</div>
         <div style="max-height:200px;overflow-y:auto;">${fbHtml}</div>
       `;
+    }
+
+    async function loadAdminStats() {
+      const runId = ++_statsRunId;
+      const box = document.getElementById("adminStatsBody");
+      let cached = {};
+      try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v1") || "{}"); } catch (e) { cached = {}; }
+      if (cached && cached.users !== undefined) {
+        renderAdminStats(cached, "🔄 최신 통계 불러오는 중...");
+      } else {
+        box.innerHTML = '<div style="text-align:center;color:var(--text-sub);padding:12px 0;">핵심 통계 불러오는 중...</div>';
+      }
+
+      const todayKey = getKstDayKey(0);
+      const yestKey = getKstDayKey(-1);
+
+      const [
+        users, activeUsers, heavy3Users, hourlyUsers,
+        todayUsers, todayReturn, yestUsers, yestNew, yestD1Ret,
+        modePwa, modeWeb, views,
+        tabGongsu, tabMeal, tabBus, coupangClicks,
+        feedbacks
+      ] = await Promise.all([
+        fetchStatValue("shierz_gongsu_prod_users", cached.users),
+        fetchStatValue("shierz_gongsu_prod_active", cached.activeUsers),
+        fetchStatValue("shierz_gongsu_prod_heavy3", cached.heavy3Users),
+        fetchStatValue("shierz_gongsu_prod_pay_hourly", cached.hourlyUsers),
+        fetchStatValue(`shierz_gongsu_prod_day_${todayKey}`, cached.todayUsers),
+        fetchStatValue(`shierz_gongsu_prod_return_${todayKey}`, cached.todayReturn),
+        fetchStatValue(`shierz_gongsu_prod_day_${yestKey}`, cached.yestUsers),
+        fetchStatValue(`shierz_gongsu_prod_new_${yestKey}`, cached.yestNew),
+        fetchStatValue(`shierz_gongsu_prod_d1ret_${yestKey}`, cached.yestD1Ret),
+        fetchStatValue("shierz_gongsu_prod_mode_pwa", cached.modePwa),
+        fetchStatValue("shierz_gongsu_prod_mode_web", cached.modeWeb),
+        fetchStatValue("shierz_gongsu_prod_views", cached.views),
+        fetchStatValue("shierz_gongsu_prod_tab_gongsu", cached.tabGongsu),
+        fetchStatValue("shierz_gongsu_prod_tab_meal", cached.tabMeal),
+        fetchStatValue("shierz_gongsu_prod_tab_bus", cached.tabBus),
+        fetchStatValue("shierz_gongsu_prod_coupang_clicks", cached.coupangClicks),
+        fetchAdminFeedbacks()
+      ]);
+
+      if (runId !== _statsRunId) return;
+      const merged = Object.assign({}, cached, {
+        users, activeUsers, heavy3Users, hourlyUsers,
+        todayUsers, todayReturn, yestUsers, yestNew, yestD1Ret,
+        modePwa, modeWeb, views,
+        tabGongsu, tabMeal, tabBus, coupangClicks, feedbacks
+      });
+      renderAdminStats(merged, "⏳ 시간·요일 그래프 불러오는 중...");
+
+      const [
+        hr0, hr1, hr2, hr3, hr4,
+        dow1, dow2, dow3, dow4, dow5, dow6, dow0,
+        rateGreat, rateGood, rateOk, rateBad
+      ] = await Promise.all([
+        fetchStatValue("shierz_gongsu_prod_hr_0", cached.hr0),
+        fetchStatValue("shierz_gongsu_prod_hr_1", cached.hr1),
+        fetchStatValue("shierz_gongsu_prod_hr_2", cached.hr2),
+        fetchStatValue("shierz_gongsu_prod_hr_3", cached.hr3),
+        fetchStatValue("shierz_gongsu_prod_hr_4", cached.hr4),
+        fetchStatValue("shierz_gongsu_prod_dow_1", cached.dow1),
+        fetchStatValue("shierz_gongsu_prod_dow_2", cached.dow2),
+        fetchStatValue("shierz_gongsu_prod_dow_3", cached.dow3),
+        fetchStatValue("shierz_gongsu_prod_dow_4", cached.dow4),
+        fetchStatValue("shierz_gongsu_prod_dow_5", cached.dow5),
+        fetchStatValue("shierz_gongsu_prod_dow_6", cached.dow6),
+        fetchStatValue("shierz_gongsu_prod_dow_0", cached.dow0),
+        fetchStatValue("shierz_gongsu_prod_rate_great", cached.rateGreat),
+        fetchStatValue("shierz_gongsu_prod_rate_good", cached.rateGood),
+        fetchStatValue("shierz_gongsu_prod_rate_ok", cached.rateOk),
+        fetchStatValue("shierz_gongsu_prod_rate_bad", cached.rateBad)
+      ]);
+
+      if (runId !== _statsRunId) return;
+      const finalData = Object.assign({}, merged, {
+        hr0, hr1, hr2, hr3, hr4,
+        dow1, dow2, dow3, dow4, dow5, dow6, dow0,
+        rateGreat, rateGood, rateOk, rateBad
+      });
+      try { localStorage.setItem("gongsu_admin_stats_cache_v1", JSON.stringify(finalData)); } catch (e) {}
+      renderAdminStats(finalData, "");
     }
 
     function openAdminStats() {
