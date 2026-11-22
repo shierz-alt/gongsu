@@ -2718,8 +2718,9 @@
 
     let _statInFlight = 0;
     const _statQueue = [];
+    const STAT_CONCURRENCY = 10;
     function _acquireStatSlot() {
-      if (_statInFlight < 6) {
+      if (_statInFlight < STAT_CONCURRENCY) {
         _statInFlight++;
         return Promise.resolve();
       }
@@ -2727,27 +2728,37 @@
     }
     function _releaseStatSlot() {
       _statInFlight--;
-      if (_statQueue.length > 0 && _statInFlight < 6) {
+      if (_statQueue.length > 0 && _statInFlight < STAT_CONCURRENCY) {
         _statInFlight++;
         const next = _statQueue.shift();
         next();
       }
     }
 
+    async function fetchWithTimeout(url, ms = 2500) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms);
+      try {
+        return await fetch(url, { signal: ctrl.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
     async function fetchStatValue(key) {
       await _acquireStatSlot();
       try {
-        for (let attempt = 0; attempt < 3; attempt++) {
+        for (let attempt = 0; attempt < 2; attempt++) {
           try {
-            const res = await fetch(`${STATS_BASE}/get/${key}`);
+            const res = await fetchWithTimeout(`${STATS_BASE}/get/${key}`, 2500);
             if (res.status === 404) return 0;
             if (res.ok) {
               const data = await res.json();
               return Number(data.value ?? 0);
             }
           } catch (e) {}
-          if (attempt < 2) {
-            await new Promise(r => setTimeout(r, 150 + Math.random() * 150));
+          if (attempt === 0) {
+            await new Promise(r => setTimeout(r, 100));
           }
         }
         return "-";
@@ -2972,7 +2983,7 @@
       const deletedSet = new Set(deleted);
       const map = new Map(archived.filter(item => !deletedSet.has(item.id)).map(item => [item.id, item]));
       try {
-        const res = await fetch(`https://ntfy.sh/${FB_TOPIC}/json?poll=1`);
+        const res = await fetchWithTimeout(`https://ntfy.sh/${FB_TOPIC}/json?poll=1`, 3000);
         if (res.ok) {
           const txt = await res.text();
           txt.split("\n").filter(Boolean).forEach(line => {
