@@ -1347,7 +1347,7 @@
       <div style="font-size:12px; color:var(--text-sub); line-height:1.5; margin-bottom:8px;">
         통근버스 시간 변경, 식단 오류, 원하는 기능을 적어주시면 관리자에게 전달됩니다.
       </div>
-      <input type="text" id="feedbackNickInput" class="memo-input" maxlength="16" placeholder="(선택) 답장 받을 닉네임 (적으면 내 화면에만 답장이 떠요)" style="width:100%; margin-bottom:8px; font-size:12px;">
+      <input type="text" id="feedbackNickInput" class="memo-input" maxlength="16" placeholder="(선택) 답장 받을 닉네임 — 비워도 이 기기로 답장이 와요" style="width:100%; margin-bottom:8px; font-size:12px;">
       <textarea id="feedbackInput" class="memo-input" rows="3" maxlength="300" placeholder="예: 평일 퇴근 옥포e편한세상 22:15 버스가 22:20으로 바뀌었어요" style="width:100%; resize:none; margin-bottom:10px; line-height:1.45;"></textarea>
       <button type="button" class="btn-save" id="feedbackSendBtn" onclick="submitFeedback()">보내기</button>
     </div>
@@ -1363,7 +1363,7 @@
       <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
           <strong style="color:var(--accent);">v40 (최신)</strong><br>
-          <span style="color:var(--text-sub);">• 바탕화면 앱 설치 유도 팝업 추가 (갤럭시 원클릭 설치 · 아이폰 홈 화면 안내)<br>• 업데이트 배너에서 바로 [내역 보기] 확인 가능</span>
+          <span style="color:var(--text-sub);">• 바탕화면 앱 설치 유도 팝업 추가 (갤럭시 원클릭 설치 · 아이폰 홈 화면 안내)<br>• 업데이트 배너에서 바로 [내역 보기] 확인 가능<br>• 닉네임 없이 보낸 제보도 기기 기준으로 1:1 답장(💌) 배너 수신</span>
         </div>
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
           <strong>v33 ~ v36</strong><br>
@@ -2832,6 +2832,32 @@
 
     const FB_TOPIC = "shierz_gongsu_fb_0847_k9p2";
 
+    // 기기 고유 ID (닉네임 없이 보낸 제보도 1:1 답장을 받을 수 있게 하는 익명 식별자)
+    function getDeviceId() {
+      try {
+        const cur = localStorage.getItem("gongsu_device_id_v1") || "";
+        if (/^[a-z0-9]{6,8}$/.test(cur)) return cur;
+        const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+        const buf = new Uint8Array(7);
+        if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(buf);
+        else for (let i = 0; i < 7; i++) buf[i] = Math.floor(Math.random() * 256);
+        let id = "";
+        for (let i = 0; i < 7; i++) id += chars[buf[i] % chars.length];
+        localStorage.setItem("gongsu_device_id_v1", id);
+        return id;
+      } catch (e) { return ""; }
+    }
+
+    function escHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function escJs(s) {
+      return String(s == null ? "" : s)
+        .replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/</g, "\\x3c").replace(/"/g, "&quot;");
+    }
+
     function openFeedbackModal() {
       closeSettings();
       const inp = document.getElementById("feedbackInput");
@@ -2865,13 +2891,15 @@
       btn.innerText = "보내는 중...";
       try {
         if (nick) localStorage.setItem("gongsu_fb_nick", nick);
+        const deviceId = getDeviceId();
         if (selectedFeedbackRate) {
           await fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_rate_${selectedFeedbackRate}`).catch(() => {});
         }
         if (msg) {
           const rateLabel = { great: "[😍최고]", good: "[🙂좋아요]", ok: "[😐보통]", bad: "[😕아쉬움]" }[selectedFeedbackRate] || "";
           const nickTag = nick ? `[닉:${nick}]` : "";
-          const fullMsg = [rateLabel, nickTag, msg].filter(Boolean).join(" ");
+          const idTag = deviceId ? `[id:${deviceId}]` : "";
+          const fullMsg = [rateLabel, nickTag + idTag, msg].filter(Boolean).join(" ");
           const res = await fetch(`https://ntfy.sh/${FB_TOPIC}`, {
             method: "POST",
             body: fullMsg
@@ -2879,7 +2907,7 @@
           if (!res.ok) throw new Error("http " + res.status);
         }
         closeFeedbackModal();
-        alert(nick ? `✅ 전달되었습니다! 답장은 '${nick}' 님 화면 상단에 뜹니다.` : "✅ 소중한 의견이 전달되었습니다! 감사합니다.");
+        alert(nick ? `✅ 전달되었습니다! 답장은 '${nick}' 님 화면 상단에 뜹니다.` : "✅ 소중한 의견이 전달되었습니다! 답장은 이 기기 화면 상단에 뜹니다.");
       } catch (e) {
         alert("전송 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.");
       } finally {
@@ -2930,10 +2958,12 @@
         if (!res.ok) return;
         const txt = await res.text();
         const myNick = (localStorage.getItem("gongsu_fb_nick") || "").trim();
+        const myDeviceId = getDeviceId();
         let latestGlobal = "";
         let latestGlobalId = "";
         let latestPersonal = "";
         let latestPersonalId = "";
+        let latestPersonalLabel = "";
         txt.split("\n").filter(Boolean).forEach(line => {
           try {
             const obj = JSON.parse(line);
@@ -2942,9 +2972,12 @@
               if (raw.startsWith("@reply:")) {
                 try {
                   const payload = JSON.parse(raw.slice(7));
-                  if (myNick && payload.target === myNick && payload.msg) {
+                  const byNick = !!(myNick && payload.target === myNick);
+                  const byId = !!(myDeviceId && payload.targetId === myDeviceId);
+                  if ((byNick || byId) && payload.msg) {
                     latestPersonal = payload.msg;
                     latestPersonalId = obj.id || "";
+                    latestPersonalLabel = byNick ? `[${myNick} 님께 답장]` : "[내 제보 답장]";
                   }
                 } catch (e) {}
               } else {
@@ -2959,7 +2992,7 @@
         if (showPersonal) {
           const banner = document.getElementById("adminNoticeBanner");
           const textEl = document.getElementById("adminNoticeText");
-          if (textEl) textEl.innerText = `💌 [${myNick} 님께 답장] ${latestPersonal}`;
+          if (textEl) textEl.innerText = `💌 ${latestPersonalLabel || "[내 제보 답장]"} ${latestPersonal}`;
           if (banner) {
             banner.dataset.nid = latestPersonalId;
             banner.style.display = "flex";
@@ -2976,17 +3009,31 @@
       } catch (e) {}
     }
 
-    async function replyToFeedbackNick(nick) {
-      const msg = prompt(`'${nick}' 님 화면에만 띄울 답장 내용을 입력하세요:`);
+    async function replyToFeedbackTarget(targetKey, displayLabel, deviceIdOpt) {
+      const key = String(targetKey || "");
+      const isIdKey = key.indexOf("id:") === 0;
+      const isNickKey = key.indexOf("nick:") === 0;
+      const targetVal = isIdKey ? key.slice(3) : (isNickKey ? key.slice(5) : key);
+      const devId = String(deviceIdOpt || (isIdKey ? targetVal : "")).trim();
+      const label = displayLabel || (devId ? `익명#${devId}` : targetVal);
+      if (!targetVal && !devId) { alert("이 제보에는 답장할 식별자가 없어요."); return; }
+      const msg = prompt(`'${label}' 님 화면에만 띄울 답장 내용을 입력하세요:`);
       if (!msg || !msg.trim()) return;
       try {
-        const body = "@reply:" + JSON.stringify({ target: nick, msg: msg.trim() });
+        const payload = { msg: msg.trim() };
+        if (isNickKey && targetVal) payload.target = targetVal;
+        if (devId) payload.targetId = devId;
+        const body = "@reply:" + JSON.stringify(payload);
         const res = await fetch(`https://ntfy.sh/${NOTICE_TOPIC}`, { method: "POST", body });
         if (!res.ok) throw new Error("http " + res.status);
-        alert(`💌 '${nick}' 님께 개별 답장 배너를 보냈습니다!`);
+        alert(`💌 '${label}' 님께 개별 답장 배너를 보냈습니다!`);
       } catch (e) {
         alert("답장 전송 중 오류가 발생했어요.");
       }
+    }
+
+    function replyToFeedbackNick(nick) {
+      return replyToFeedbackTarget("nick:" + nick, nick);
     }
 
     function dismissNoticeBanner() {
@@ -3168,7 +3215,18 @@
         ? fbList.map(f => {
             const dt = f.time ? new Date(f.time * 1000) : null;
             const tStr = dt ? `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : "";
-            const safeMsg = String(f.message).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            const rawMsg = String(f.message == null ? "" : f.message);
+            const nickMatch = rawMsg.match(/\[닉:([^\]]+)\]/);
+            const idMatch = rawMsg.match(/\[id:([A-Za-z0-9]{4,16})\]/);
+            const fbNick = nickMatch ? nickMatch[1].trim() : "";
+            const fbDeviceId = idMatch ? idMatch[1] : "";
+            const cleanMsg = rawMsg.replace(/\[닉:[^\]]*\]/g, " ").replace(/\[id:[^\]]*\]/g, " ").replace(/[ \t]{2,}/g, " ").trim();
+            const safeMsg = String(cleanMsg || "(내용 없음)").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+            const whoChip = fbNick
+              ? `<span style="color:#a5b4fc;font-size:10px;">👤 ${escHtml(fbNick)}${fbDeviceId ? " · 익명#" + escHtml(fbDeviceId) : ""}</span>`
+              : (fbDeviceId
+                ? `<span style="color:#94a3b8;font-size:10px;">🕶️ 익명#${escHtml(fbDeviceId)}</span>`
+                : `<span style="color:#64748b;font-size:10px;">❔ 식별자 없음</span>`);
             const m = fbMeta[f.id] || {};
             const stBadge = m.status === "done"
               ? `<span style="background:rgba(16,185,129,0.2);color:#6ee7b7;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;">✅ 완료</span>`
@@ -3176,13 +3234,14 @@
               ? `<span style="background:rgba(245,158,11,0.2);color:#fcd34d;padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700;">⏸️ 보류</span>`
               : "";
             const noteLine = m.note ? `<div style="margin-top:4px;font-size:11px;color:#38bdf8;">📝 ${String(m.note).replace(/</g,"&lt;")}</div>` : "";
-            const nickMatch = (f.message || "").match(/\[닉:([^\]]+)\]/);
-            const replyBtn = nickMatch
-              ? `<button type="button" onclick="replyToFeedbackNick('${nickMatch[1].replace(/'/g,"\\'")}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="이 닉네임에게 답장">💌</button>`
+            const replyTargetKey = fbNick ? "nick:" + fbNick : (fbDeviceId ? "id:" + fbDeviceId : "");
+            const replyLabel = fbNick ? fbNick : (fbDeviceId ? "익명#" + fbDeviceId : "");
+            const replyBtn = replyTargetKey
+              ? `<button type="button" onclick="replyToFeedbackTarget('${escJs(replyTargetKey)}','${escJs(replyLabel)}','${escJs(fbDeviceId)}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="${fbNick ? "이 사용자에게 1:1 답장" : "이 기기로 1:1 답장"}">💌</button>`
               : "";
             return `<div style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
-                <span style="color:var(--text-muted);font-size:10px;">${tStr} ${stBadge}</span>
+                <span style="color:var(--text-muted);font-size:10px;">${tStr} ${stBadge} ${whoChip}</span>
                 <div style="display:flex;gap:6px;align-items:center;">
                   ${replyBtn}
                   <button type="button" onclick="setFeedbackStatus('${f.id}','done')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="완료">✅</button>
@@ -3588,6 +3647,7 @@
     trackUsage();
     initGuide();
     initBuildUpdateToast();
+    getDeviceId();
     loadRemoteNotice();
     initPwaSupport();
   </script>
