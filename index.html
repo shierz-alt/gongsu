@@ -700,6 +700,31 @@
       cursor: pointer;
     }
 
+    .fb-act {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px 6px;
+      min-width: 28px;
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fb-act:active {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .fb-act-del {
+      color: var(--text-muted);
+    }
+
     body.modal-open {
       overflow: hidden;
       overscroll-behavior: none;
@@ -1362,7 +1387,11 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:10px; font-size:12.5px; line-height:1.5; color:var(--text-main); margin-bottom:14px;">
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
-          <strong style="color:var(--accent);">v40 (최신)</strong><br>
+          <strong style="color:var(--accent);">v41 (최신)</strong><br>
+          <span style="color:var(--text-sub);">• 관리자 통계 제보 삭제(✕)가 즉시 반영·새로고침 후에도 유지되도록 수정<br>• 제보 카드 버튼(💌 ✅ ⏸️ 📝 ✕) 터치 영역 확대</span>
+        </div>
+        <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
+          <strong>v40</strong><br>
           <span style="color:var(--text-sub);">• 바탕화면 앱 설치 유도 팝업 추가 (갤럭시 원클릭 설치 · 아이폰 홈 화면 안내)<br>• 업데이트 배너에서 바로 [내역 보기] 확인 가능<br>• 닉네임 없이 보낸 제보도 기기 기준으로 1:1 답장(💌) 배너 수신</span>
         </div>
         <div style="background:rgba(15,23,42,0.7); border:1px solid var(--card-border); border-radius:10px; padding:10px 12px;">
@@ -2612,7 +2641,7 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v40";
+    const APP_BUILD = "v41";
     const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
@@ -3072,8 +3101,8 @@
       let deleted = [];
       try { archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]"); } catch (e) { archived = []; }
       try { deleted = JSON.parse(localStorage.getItem("gongsu_admin_fb_deleted") || "[]"); } catch (e) { deleted = []; }
-      const deletedSet = new Set(deleted);
-      const map = new Map(archived.filter(item => !deletedSet.has(item.id)).map(item => [item.id, item]));
+      const deletedSet = new Set((Array.isArray(deleted) ? deleted : []).map(String));
+      const map = new Map(archived.filter(item => !deletedSet.has(String(item.id))).map(item => [item.id, item]));
       try {
         const res = await fetchWithTimeout(`https://ntfy.sh/${FB_TOPIC}/json?poll=1`, 3000);
         if (res.ok) {
@@ -3081,7 +3110,7 @@
           txt.split("\n").filter(Boolean).forEach(line => {
             try {
               const obj = JSON.parse(line);
-              if (obj.event === "message" && obj.message && !deletedSet.has(obj.id)) {
+              if (obj.event === "message" && obj.message && !deletedSet.has(String(obj.id))) {
                 map.set(obj.id, { id: obj.id, time: obj.time, message: obj.message });
               }
             } catch (e) {}
@@ -3118,15 +3147,34 @@
     }
 
     function deleteAdminFeedback(id) {
+      const key = String(id);
       try {
         const archived = JSON.parse(localStorage.getItem("gongsu_admin_fb_archive") || "[]");
-        const filtered = archived.filter(x => x.id !== id);
+        const filtered = archived.filter(x => String(x.id) !== key);
         localStorage.setItem("gongsu_admin_fb_archive", JSON.stringify(filtered));
         const deleted = JSON.parse(localStorage.getItem("gongsu_admin_fb_deleted") || "[]");
-        if (!deleted.includes(id)) deleted.push(id);
-        localStorage.setItem("gongsu_admin_fb_deleted", JSON.stringify(deleted.slice(-200)));
-        loadAdminStats();
+        if (!deleted.map(String).includes(key)) deleted.push(key);
+        localStorage.setItem("gongsu_admin_fb_deleted", JSON.stringify(deleted.slice(-300)));
+
+        // 통계 캐시에서도 즉시 제거 — loadAdminStats가 캐시를 먼저 그리면서
+        // 삭제한 제보가 되살아나 보이던 문제 방지
+        let cached = null;
+        try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v1") || "{}"); } catch (e) { cached = null; }
+        if (cached && Array.isArray(cached.feedbacks)) {
+          cached.feedbacks = cached.feedbacks.filter(f => String(f.id) !== key);
+          try { localStorage.setItem("gongsu_admin_stats_cache_v1", JSON.stringify(cached)); } catch (e) {}
+        }
+
+        // 화면에서도 즉시 사라지게 처리 (새로고침 통계를 기다리지 않음)
+        if (cached && cached.users !== undefined) {
+          renderAdminStats(cached, "🔄 최신 통계 불러오는 중...");
+        } else {
+          const box = document.getElementById("adminStatsBody");
+          const card = box ? Array.from(box.querySelectorAll("[data-fbid]")).find(el => el.dataset.fbid === key) : null;
+          if (card) card.remove();
+        }
       } catch (e) {}
+      loadAdminStats();
     }
 
     function loadNotebook() {
@@ -3209,7 +3257,10 @@
           return `<div><div style="height:36px;display:flex;align-items:flex-end;justify-content:center;"><div style="width:12px;height:${h}px;background:#38bdf8;border-radius:3px;"></div></div><div style="font-size:10px;color:var(--text-sub);margin-top:2px;">${d}</div><div style="font-size:9px;color:var(--text-muted);">${cnt}</div></div>`;
         }).join("") + `</div>`;
 
-      const fbList = Array.isArray(feedbacks) ? feedbacks : [];
+      let fbDeletedRaw = [];
+      try { fbDeletedRaw = JSON.parse(localStorage.getItem("gongsu_admin_fb_deleted") || "[]"); } catch (e) { fbDeletedRaw = []; }
+      const fbDeletedSet = new Set((Array.isArray(fbDeletedRaw) ? fbDeletedRaw : []).map(String));
+      const fbList = (Array.isArray(feedbacks) ? feedbacks : []).filter(f => f && !fbDeletedSet.has(String(f.id)));
       const fbMeta = getFeedbackMeta();
       const fbHtml = fbList.length
         ? fbList.map(f => {
@@ -3237,17 +3288,17 @@
             const replyTargetKey = fbNick ? "nick:" + fbNick : (fbDeviceId ? "id:" + fbDeviceId : "");
             const replyLabel = fbNick ? fbNick : (fbDeviceId ? "익명#" + fbDeviceId : "");
             const replyBtn = replyTargetKey
-              ? `<button type="button" onclick="replyToFeedbackTarget('${escJs(replyTargetKey)}','${escJs(replyLabel)}','${escJs(fbDeviceId)}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="${fbNick ? "이 사용자에게 1:1 답장" : "이 기기로 1:1 답장"}">💌</button>`
+              ? `<button type="button" class="fb-act" onclick="replyToFeedbackTarget('${escJs(replyTargetKey)}','${escJs(replyLabel)}','${escJs(fbDeviceId)}')" title="${fbNick ? "이 사용자에게 1:1 답장" : "이 기기로 1:1 답장"}">💌</button>`
               : "";
-            return `<div style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
+            return `<div data-fbid="${escHtml(String(f.id))}" style="background:rgba(15,23,42,0.7);border:1px solid var(--card-border);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:6px;">
                 <span style="color:var(--text-muted);font-size:10px;">${tStr} ${stBadge} ${whoChip}</span>
-                <div style="display:flex;gap:6px;align-items:center;">
+                <div style="display:flex;gap:2px;align-items:center;">
                   ${replyBtn}
-                  <button type="button" onclick="setFeedbackStatus('${f.id}','done')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="완료">✅</button>
-                  <button type="button" onclick="setFeedbackStatus('${f.id}','hold')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="보류">⏸️</button>
-                  <button type="button" onclick="editFeedbackNote('${f.id}')" style="background:none;border:none;font-size:11px;cursor:pointer;padding:0;" title="메모">📝</button>
-                  <button type="button" onclick="deleteAdminFeedback('${f.id}')" style="background:none;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;padding:0;">✕</button>
+                  <button type="button" class="fb-act" onclick="setFeedbackStatus('${escJs(String(f.id))}','done')" title="완료">✅</button>
+                  <button type="button" class="fb-act" onclick="setFeedbackStatus('${escJs(String(f.id))}','hold')" title="보류">⏸️</button>
+                  <button type="button" class="fb-act" onclick="editFeedbackNote('${escJs(String(f.id))}')" title="메모">📝</button>
+                  <button type="button" class="fb-act fb-act-del" onclick="deleteAdminFeedback('${escJs(String(f.id))}')" title="삭제" aria-label="삭제">✕</button>
                 </div>
               </div>
               <div style="color:var(--text-main);line-height:1.4;">${safeMsg}</div>
