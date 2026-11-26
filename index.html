@@ -1319,14 +1319,14 @@
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="forceRefreshApp()">🔄 앱 최신 버전 새로고침</button>
 
-      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v42)</button>
+      <button type="button" class="btn-backup" style="width:100%; margin-bottom:10px;" onclick="openPatchNotes()">🆕 업데이트 내역 (v43)</button>
 
       <button type="button" class="btn-backup" style="width:100%; margin-bottom:12px;" onclick="openFeedbackModal()">💬 오류·시간표 수정 제보</button>
 
       <button type="button" id="adminStatsBtn" class="btn-backup" style="display:none; width:100%; margin-bottom:12px; border-color:var(--accent); color:var(--accent);" onclick="openAdminStats()">👑 관리자 통계 보기</button>
 
       <button class="btn-save" onclick="saveSettings()">저장 완료</button>
-      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v42 · 조선소 공수 계산기</div>
+      <div id="appVersionTrigger" onclick="handleVersionTap()" style="text-align:center; font-size:11px; color:var(--text-muted); margin-top:10px; user-select:none; cursor:default;">v43 · 조선소 공수 계산기</div>
     </div>
   </div>
 
@@ -1984,13 +1984,13 @@
       } else {
         targetMap[selectedDateStr] = Math.round(val * 100) / 100;
         if (!isAdminMode() && !localStorage.getItem("gongsu_active_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_active`).then(r => {
+          fetch(statHit(`active`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
         const totalEntries = Object.keys(gongsuData).length + Object.keys(hoursData).length;
         if (!isAdminMode() && totalEntries >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_heavy3`).then(r => {
+          fetch(statHit(`heavy3`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
           }).catch(() => {});
         }
@@ -2645,8 +2645,12 @@
     checkPayday();
 
     // Admin & Usage Analytics
-    const APP_BUILD = "v42";
-    const STATS_BASE = "https://countapi.mileshilliard.com/api/v1";
+    const APP_BUILD = "v43";
+    // 통계 백엔드: Tallywire (Cloudflare Workers · 무인증 · CORS 허용 · 600 hits/min)
+    const STATS_BASE = "https://tallywire.cronpulse.workers.dev";
+    const STATS_NS = "shierz_gongsu_prod";
+    const statHit = (key) => `${STATS_BASE}/hit/${STATS_NS}/${key}`;
+    const statGet = (key) => `${STATS_BASE}/get/${STATS_NS}/${key}`;
     const ADMIN_PIN = "0847";
     const NOTICE_TOPIC = "shierz_gongsu_notice_0847_m3q1";
     let versionTapCount = 0;
@@ -2726,7 +2730,7 @@
 
     function trackCoupangClick() {
       if (isAdminMode()) return;
-      fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_coupang_clicks`).catch(() => {});
+      fetch(statHit(`coupang_clicks`)).catch(() => {});
     }
 
     function trackUsage() {
@@ -2736,7 +2740,7 @@
         const yestKey = getKstDayKey(-1);
         const prevCountedDay = localStorage.getItem("gongsu_counted_day_v1");
         if (!localStorage.getItem("gongsu_counted_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_users`).then(r => {
+          fetch(statHit(`users`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_user_v1", "1");
           }).catch(() => {});
         }
@@ -2745,17 +2749,17 @@
             localStorage.setItem("gongsu_first_day_v1", "legacy");
           } else {
             localStorage.setItem("gongsu_first_day_v1", todayKey);
-            fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_new_${todayKey}`).catch(() => {});
+            fetch(statHit(`new_${todayKey}`)).catch(() => {});
           }
         }
         const firstDay = localStorage.getItem("gongsu_first_day_v1");
         if (firstDay === yestKey && !localStorage.getItem("gongsu_d1_ret_counted")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_d1ret_${yestKey}`).then(r => {
+          fetch(statHit(`d1ret_${yestKey}`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_d1_ret_counted", "1");
           }).catch(() => {});
         }
         if (prevCountedDay !== todayKey) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_day_${todayKey}`).then(r => {
+          fetch(statHit(`day_${todayKey}`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_day_v1", todayKey);
           }).catch(() => {});
         }
@@ -2769,17 +2773,17 @@
         }
         localStorage.setItem("gongsu_visit_days_v1", JSON.stringify(visitDays.slice(-60)));
         if (visitDays.length >= 2 && localStorage.getItem("gongsu_counted_return_v1") !== todayKey) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_return_${todayKey}`).then(r => {
+          fetch(statHit(`return_${todayKey}`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_counted_return_v1", todayKey);
           }).catch(() => {});
         }
         if (Object.keys(gongsuData).length > 0 && !localStorage.getItem("gongsu_active_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_active`).then(r => {
+          fetch(statHit(`active`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_active_user_v1", "1");
           }).catch(() => {});
         }
         if (Object.keys(gongsuData).length >= 3 && !localStorage.getItem("gongsu_heavy3_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_heavy3`).then(r => {
+          fetch(statHit(`heavy3`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_heavy3_user_v1", "1");
           }).catch(() => {});
         }
@@ -2787,10 +2791,10 @@
         const hrSlot = getHourSlot(kst.getUTCHours());
         const dow = kst.getUTCDay();
         const isPwa = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
-        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_mode_${isPwa ? "pwa" : "web"}`).catch(() => {});
-        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_hr_${hrSlot}`).catch(() => {});
-        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_dow_${dow}`).catch(() => {});
-        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_views`).catch(() => {});
+        fetch(statHit(`mode_${isPwa ? "pwa" : "web"}`)).catch(() => {});
+        fetch(statHit(`hr_${hrSlot}`)).catch(() => {});
+        fetch(statHit(`dow_${dow}`)).catch(() => {});
+        fetch(statHit(`views`)).catch(() => {});
       } catch (e) {}
     }
 
@@ -2829,7 +2833,7 @@
       const onAbort = () => { try { ctrl.abort(); } catch (e) {} };
       if (outer) outer.addEventListener("abort", onAbort, { once: true });
       try {
-        const res = await fetch(`${STATS_BASE}/get/${encodeURIComponent(key)}`, { signal: ctrl.signal, cache: "no-store" });
+        const res = await fetch(statGet(key), { signal: ctrl.signal, cache: "no-store" });
         if (res.status === 404) return { ok: true, value: 0 };
         if (!res.ok) return { ok: false, value: fallback, status: res.status };
         const data = await res.json();
@@ -2847,7 +2851,7 @@
       if (payMode !== "hourly" || isAdminMode()) return;
       try {
         if (!localStorage.getItem("gongsu_hourly_user_v1")) {
-          fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_pay_hourly`).then(r => {
+          fetch(statHit(`pay_hourly`)).then(r => {
             if (r.ok) localStorage.setItem("gongsu_hourly_user_v1", "1");
           }).catch(() => {});
         }
@@ -2857,7 +2861,7 @@
     function trackFeatureHit(name) {
       if (isAdminMode()) return;
       try {
-        fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_tab_${name}`).catch(() => {});
+        fetch(statHit(`tab_${name}`)).catch(() => {});
       } catch (e) {}
     }
 
@@ -2924,7 +2928,7 @@
         if (nick) localStorage.setItem("gongsu_fb_nick", nick);
         const deviceId = getDeviceId();
         if (selectedFeedbackRate) {
-          await fetch(`${STATS_BASE}/hit/shierz_gongsu_prod_rate_${selectedFeedbackRate}`).catch(() => {});
+          await fetch(statHit(`rate_${selectedFeedbackRate}`)).catch(() => {});
         }
         if (msg) {
           const rateLabel = { great: "[😍최고]", good: "[🙂좋아요]", ok: "[😐보통]", bad: "[😕아쉬움]" }[selectedFeedbackRate] || "";
@@ -3161,10 +3165,10 @@
         // 통계 캐시에서도 즉시 제거 — loadAdminStats가 캐시를 먼저 그리면서
         // 삭제한 제보가 되살아나 보이던 문제 방지
         let cached = null;
-        try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v1") || "{}"); } catch (e) { cached = null; }
+        try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v2") || "{}"); } catch (e) { cached = null; }
         if (cached && Array.isArray(cached.feedbacks)) {
           cached.feedbacks = cached.feedbacks.filter(f => String(f.id) !== key);
-          try { localStorage.setItem("gongsu_admin_stats_cache_v1", JSON.stringify(cached)); } catch (e) {}
+          try { localStorage.setItem("gongsu_admin_stats_cache_v2", JSON.stringify(cached)); } catch (e) {}
         }
 
         // 화면에서도 즉시 사라지게 처리 (새로고침 통계를 기다리지 않음)
@@ -3344,38 +3348,38 @@
       const todayKey = getKstDayKey(0);
       const yestKey = getKstDayKey(-1);
       return [
-        ["users", "shierz_gongsu_prod_users"],
-        ["activeUsers", "shierz_gongsu_prod_active"],
-        ["heavy3Users", "shierz_gongsu_prod_heavy3"],
-        ["hourlyUsers", "shierz_gongsu_prod_pay_hourly"],
-        ["todayUsers", `shierz_gongsu_prod_day_${todayKey}`],
-        ["todayReturn", `shierz_gongsu_prod_return_${todayKey}`],
-        ["yestUsers", `shierz_gongsu_prod_day_${yestKey}`],
-        ["yestNew", `shierz_gongsu_prod_new_${yestKey}`],
-        ["yestD1Ret", `shierz_gongsu_prod_d1ret_${yestKey}`],
-        ["modePwa", "shierz_gongsu_prod_mode_pwa"],
-        ["modeWeb", "shierz_gongsu_prod_mode_web"],
-        ["views", "shierz_gongsu_prod_views"],
-        ["tabGongsu", "shierz_gongsu_prod_tab_gongsu"],
-        ["tabMeal", "shierz_gongsu_prod_tab_meal"],
-        ["tabBus", "shierz_gongsu_prod_tab_bus"],
-        ["coupangClicks", "shierz_gongsu_prod_coupang_clicks"],
-        ["hr0", "shierz_gongsu_prod_hr_0"],
-        ["hr1", "shierz_gongsu_prod_hr_1"],
-        ["hr2", "shierz_gongsu_prod_hr_2"],
-        ["hr3", "shierz_gongsu_prod_hr_3"],
-        ["hr4", "shierz_gongsu_prod_hr_4"],
-        ["dow1", "shierz_gongsu_prod_dow_1"],
-        ["dow2", "shierz_gongsu_prod_dow_2"],
-        ["dow3", "shierz_gongsu_prod_dow_3"],
-        ["dow4", "shierz_gongsu_prod_dow_4"],
-        ["dow5", "shierz_gongsu_prod_dow_5"],
-        ["dow6", "shierz_gongsu_prod_dow_6"],
-        ["dow0", "shierz_gongsu_prod_dow_0"],
-        ["rateGreat", "shierz_gongsu_prod_rate_great"],
-        ["rateGood", "shierz_gongsu_prod_rate_good"],
-        ["rateOk", "shierz_gongsu_prod_rate_ok"],
-        ["rateBad", "shierz_gongsu_prod_rate_bad"]
+        ["users", "users"],
+        ["activeUsers", "active"],
+        ["heavy3Users", "heavy3"],
+        ["hourlyUsers", "pay_hourly"],
+        ["todayUsers", `day_${todayKey}`],
+        ["todayReturn", `return_${todayKey}`],
+        ["yestUsers", `day_${yestKey}`],
+        ["yestNew", `new_${yestKey}`],
+        ["yestD1Ret", `d1ret_${yestKey}`],
+        ["modePwa", "mode_pwa"],
+        ["modeWeb", "mode_web"],
+        ["views", "views"],
+        ["tabGongsu", "tab_gongsu"],
+        ["tabMeal", "tab_meal"],
+        ["tabBus", "tab_bus"],
+        ["coupangClicks", "coupang_clicks"],
+        ["hr0", "hr_0"],
+        ["hr1", "hr_1"],
+        ["hr2", "hr_2"],
+        ["hr3", "hr_3"],
+        ["hr4", "hr_4"],
+        ["dow1", "dow_1"],
+        ["dow2", "dow_2"],
+        ["dow3", "dow_3"],
+        ["dow4", "dow_4"],
+        ["dow5", "dow_5"],
+        ["dow6", "dow_6"],
+        ["dow0", "dow_0"],
+        ["rateGreat", "rate_great"],
+        ["rateGood", "rate_good"],
+        ["rateOk", "rate_ok"],
+        ["rateBad", "rate_bad"]
       ];
     }
 
@@ -3396,9 +3400,9 @@
       if (!box) return;
 
       let cached = {};
-      try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v1") || "{}") || {}; } catch (e) { cached = {}; }
+      try { cached = JSON.parse(localStorage.getItem("gongsu_admin_stats_cache_v2") || "{}") || {}; } catch (e) { cached = {}; }
       let cachedAt = 0;
-      try { cachedAt = Number(localStorage.getItem("gongsu_admin_stats_updated_v1") || 0) || 0; } catch (e) { cachedAt = 0; }
+      try { cachedAt = Number(localStorage.getItem("gongsu_admin_stats_updated_v2") || 0) || 0; } catch (e) { cachedAt = 0; }
       const hasCache = !!cached && cached.users !== undefined;
 
       // 이전 실행(1차·재시도)은 취소해서 요청이 겹쳐 쌓이지 않게
@@ -3432,13 +3436,13 @@
       };
 
       const saveCache = () => {
-        try { localStorage.setItem("gongsu_admin_stats_cache_v1", JSON.stringify(state)); } catch (e) {}
+        try { localStorage.setItem("gongsu_admin_stats_cache_v2", JSON.stringify(state)); } catch (e) {}
         lastSave = Date.now();
       };
       const markFresh = () => {
         if (staleFields.size !== 0) return;
         stamp = Date.now();
-        try { localStorage.setItem("gongsu_admin_stats_updated_v1", String(stamp)); } catch (e) {}
+        try { localStorage.setItem("gongsu_admin_stats_updated_v2", String(stamp)); } catch (e) {}
       };
       const paintNow = (badge) => {
         lastPaint = Date.now();
